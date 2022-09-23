@@ -138,8 +138,9 @@ class OptimizerCallback(IOptimizerCallback):
         """
 
         # Clip
-        for group in zip(optimizer.param_groups):
-            torch.nn.utils.clip_grad_norm_(group["params"], **grad_clip_params)
+        for group in optimizer.param_groups:
+            parameters = group["params"]
+            torch.nn.utils.clip_grad_norm_(parameters, **grad_clip_params)
 
         # Log
         if self.log_grad_norm:
