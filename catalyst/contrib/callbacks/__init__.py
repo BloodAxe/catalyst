@@ -3,20 +3,17 @@ import logging
 
 from torch.jit.frontend import UnsupportedNodeError
 
-from catalyst.settings import SETTINGS
-
 from catalyst.contrib.callbacks.confusion_matrix_logger import (
     ConfusionMatrixCallback,
 )
 from catalyst.contrib.callbacks.cutmix_callback import CutmixCallback
 from catalyst.contrib.callbacks.gradnorm_logger import GradNormLogger
-from catalyst.contrib.callbacks.inference_callback import InferCallback
 from catalyst.contrib.callbacks.knn_metric import KNNMetricCallback
 from catalyst.contrib.callbacks.mixup_callback import MixupCallback
 from catalyst.contrib.callbacks.perplexity_metric import (
     PerplexityMetricCallback,
 )
-from catalyst.contrib.callbacks.telegram_logger import TelegramLogger
+from catalyst.settings import SETTINGS
 
 logger = logging.getLogger(__name__)
 

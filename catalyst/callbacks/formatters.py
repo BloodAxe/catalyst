@@ -1,6 +1,6 @@
-from typing import Dict
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
+from typing import Dict
 
 from catalyst.core.runner import IRunner
 from catalyst.utils.dict import split_dict_to_subdicts

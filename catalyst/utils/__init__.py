@@ -1,12 +1,10 @@
 # flake8: noqa
 """
 All utils are gathered in :py:mod:`catalyst.utils` for easier access.
-
-.. note::
-    Everything from :py:mod:`catalyst.contrib.utils` is included in :py:mod:`catalyst.utils`
 """
 
 
+from catalyst.settings import IS_PRUNING_AVAILABLE
 from catalyst.utils.checkpoint import (
     load_checkpoint,
     pack_checkpoint,
@@ -48,9 +46,7 @@ from catalyst.utils.initialization import (
     reset_weights_if_possible,
 )
 from catalyst.utils.loaders import (
-    get_loaders_from_params,
     validate_loaders,
-    get_loader,
     get_native_batch_from_loader,
     get_native_batch_from_loaders,
 )
@@ -64,13 +60,13 @@ from catalyst.utils.misc import (
     maybe_recursive_call,
     fn_ends_with_pass,
 )
+from catalyst.utils.misc import find_value_ids
 from catalyst.utils.numpy import get_one_hot
 from catalyst.utils.parser import parse_config_args, parse_args_uargs
 from catalyst.utils.scripts import (
     import_module,
     dump_code,
     dump_python_files,
-    prepare_config_api_components,
     dump_experiment_code,
     distributed_cmd_run,
 )
@@ -110,8 +106,6 @@ from catalyst.utils.tracing import (
     load_traced_model,
 )
 
-from catalyst.settings import IS_PRUNING_AVAILABLE
-
 if IS_PRUNING_AVAILABLE:
     from catalyst.utils.pruning import prune_model, remove_reparametrization
 
@@ -127,6 +121,3 @@ from catalyst.settings import IS_GIT_AVAILABLE
 
 if IS_GIT_AVAILABLE:
     from catalyst.utils.pipelines import clone_pipeline
-    from catalyst.utils.wizard import run_wizard, Wizard
-
-from catalyst.contrib.utils import *

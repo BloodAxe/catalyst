@@ -1,14 +1,13 @@
-from typing import TYPE_CHECKING
 import os
+from typing import TYPE_CHECKING
 
 import imageio
 import numpy as np
-from skimage.color import label2rgb
-
 import torch
 import torch.nn.functional as F  # noqa: N812, WPS301
-
 from catalyst.contrib.utils.cv.tensor import tensor_to_ndimage
+from skimage.color import label2rgb
+
 from catalyst.core.callback import Callback, CallbackOrder
 
 if TYPE_CHECKING:

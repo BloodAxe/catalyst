@@ -1,15 +1,16 @@
-from typing import Any, Dict, List, Union
 import json
 import os
-from pathlib import Path
 import platform
 import shutil
 import subprocess
-from subprocess import CalledProcessError
 import sys
 import warnings
+from pathlib import Path
+from subprocess import CalledProcessError
+from typing import Any, Dict, List, Union
 
-from catalyst.contrib.tools.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
+
 from catalyst.utils.config import save_config
 from catalyst.utils.misc import get_utcnow_time
 

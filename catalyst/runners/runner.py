@@ -1,5 +1,5 @@
-from typing import Any, Callable, Dict, Generator, List, Mapping, Union
 from collections import OrderedDict
+from typing import Any, Callable, Dict, Generator, List, Mapping, Union
 
 import torch
 from torch.jit import ScriptModule
@@ -56,7 +56,6 @@ class Runner(IStageBasedRunner):
         fp16: Union[Dict, bool] = None,
         distributed: bool = False,
         check: bool = False,
-        overfit: bool = False,
         timeit: bool = False,
         load_best_on_end: bool = False,
         initial_seed: int = 42,
@@ -156,7 +155,6 @@ class Runner(IStageBasedRunner):
             verbose=verbose,
             check_time=timeit,
             check_run=check,
-            overfit=overfit,
             stage_kwargs=stage_kwargs or state_kwargs,
             checkpoint_data=checkpoint_data,
             distributed_params=fp16,

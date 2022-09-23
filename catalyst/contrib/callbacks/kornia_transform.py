@@ -4,7 +4,6 @@ import torch
 from torch import nn
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-from catalyst.registry import TRANSFORMS
 
 if TYPE_CHECKING:
     from catalyst.core.runner import IRunner
@@ -174,10 +173,7 @@ class BatchTransformCallback(Callback):
         )
 
         transforms: Sequence[nn.Module] = [
-            item
-            if isinstance(item, nn.Module)
-            else TRANSFORMS.get_from_params(**item)
-            for item in transform
+            item for item in transform
         ]
         assert all(
             isinstance(t, nn.Module) for t in transforms

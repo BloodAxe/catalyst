@@ -1,15 +1,14 @@
 from typing import Dict, List, TYPE_CHECKING
 
 import numpy as np
-from sklearn.metrics import confusion_matrix as confusion_matrix_fn
-
 import torch
 import torch.distributed  # noqa: WPS301
-
-from catalyst.contrib.utils.visualization import (
+from catalyst.utils.visualization import (
     plot_confusion_matrix,
     render_figure_to_tensor,
 )
+from sklearn.metrics import confusion_matrix as confusion_matrix_fn
+
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.tools.meters.confusionmeter import ConfusionMeter
 

@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 

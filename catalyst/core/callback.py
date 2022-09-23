@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING
 from enum import IntFlag
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from catalyst.core.runner import IRunner

@@ -2,8 +2,8 @@
 IoU metric. Jaccard metric refers to IoU here, same functionality.
 """
 
-from typing import List
 from functools import partial
+from typing import List
 
 import torch
 

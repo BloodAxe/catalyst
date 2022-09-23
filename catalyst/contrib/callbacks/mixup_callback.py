@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-
 import torch
 
 from catalyst.callbacks.criterion import CriterionCallback

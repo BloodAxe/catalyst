@@ -1,6 +1,6 @@
-from typing import Mapping, TYPE_CHECKING
-from collections import OrderedDict
 import copy
+from collections import OrderedDict
+from typing import Mapping, TYPE_CHECKING
 
 from torch.utils.data import DataLoader
 

@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Optional, Tuple
 import configparser
 import logging
 import os
+from typing import Any, Dict, List, Optional, Tuple
 
 from catalyst.tools.frozen_class import FrozenClass
 

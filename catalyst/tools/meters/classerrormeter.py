@@ -1,7 +1,6 @@
 import numbers
 
 import numpy as np
-
 import torch
 
 from catalyst.tools.meters import meter

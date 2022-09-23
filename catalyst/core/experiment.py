@@ -1,6 +1,6 @@
-from typing import Any, Dict, Iterable, Mapping
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from typing import Any, Dict, Iterable, Mapping
 
 from torch.utils.data import DataLoader, Dataset
 

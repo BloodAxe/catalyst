@@ -1,8 +1,8 @@
-from typing import Callable, Dict, Union
-from collections import OrderedDict
 import os
-from pathlib import Path
 import shutil
+from collections import OrderedDict
+from pathlib import Path
+from typing import Callable, Dict, Union
 
 import torch
 

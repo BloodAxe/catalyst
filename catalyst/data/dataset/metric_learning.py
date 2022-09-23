@@ -1,5 +1,5 @@
-from typing import Dict, List
 from abc import ABC, abstractmethod
+from typing import Dict, List
 
 import torch
 from torch.utils.data import Dataset

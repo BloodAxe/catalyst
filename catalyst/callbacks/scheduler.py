@@ -1,5 +1,5 @@
-from typing import Optional, Tuple, TYPE_CHECKING
 from abc import ABC, abstractmethod
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import torch
 

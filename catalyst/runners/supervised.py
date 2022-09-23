@@ -1,5 +1,5 @@
-from typing import Any, Callable, List, Mapping, Tuple, Union, Iterable
 import logging
+from typing import Any, Callable, List, Mapping, Tuple, Union, Iterable
 
 import torch
 

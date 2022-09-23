@@ -1,3 +1,5 @@
+import warnings
+from collections import OrderedDict
 from typing import (
     Any,
     Dict,
@@ -8,13 +10,10 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
-from collections import OrderedDict
-import warnings
 
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
-from catalyst.callbacks.batch_overfit import BatchOverfitCallback
 from catalyst.callbacks.checkpoint import CheckpointCallback
 from catalyst.callbacks.early_stop import CheckRunCallback
 from catalyst.callbacks.exception import ExceptionCallback
@@ -33,7 +32,6 @@ from catalyst.core.functional import (
 )
 from catalyst.settings import SETTINGS
 from catalyst.typing import Criterion, Model, Optimizer, Scheduler
-from catalyst.utils.loaders import get_loaders_from_params
 
 if TYPE_CHECKING:
     from catalyst.core.callback import Callback
@@ -61,7 +59,6 @@ class Experiment(IExperiment):
         verbose: bool = False,
         check_time: bool = False,
         check_run: bool = False,
-        overfit: bool = False,
         stage_kwargs: Dict = None,
         checkpoint_data: Dict = None,
         distributed_params: Dict = None,
@@ -119,7 +116,6 @@ class Experiment(IExperiment):
         self._model = model
         self._loaders, self._valid_loader = self._get_loaders(
             loaders=loaders,
-            datasets=datasets,
             stage=stage,
             valid_loader=valid_loader,
             initial_seed=initial_seed,
@@ -141,7 +137,6 @@ class Experiment(IExperiment):
         self._verbose = verbose
         self._check_time = check_time
         self._check_run = check_run
-        self._overfit = overfit
         self._stage_kwargs = stage_kwargs or {}
         self._checkpoint_data = checkpoint_data or {}
         self._distributed_params = distributed_params or {}
@@ -203,16 +198,12 @@ class Experiment(IExperiment):
     @staticmethod
     def _get_loaders(
         loaders: "OrderedDict[str, DataLoader]",
-        datasets: Dict,
         stage: str,
         valid_loader: str,
         initial_seed: int,
     ) -> "Tuple[OrderedDict[str, DataLoader], str]":
         """Prepares loaders for a given stage."""
-        if datasets is not None:
-            loaders = get_loaders_from_params(
-                initial_seed=initial_seed, **datasets,
-            )
+
         if not stage.startswith(SETTINGS.stage_infer_prefix):  # train stage
             if len(loaders) == 1:
                 valid_loader = list(loaders.keys())[0]
@@ -275,8 +266,6 @@ class Experiment(IExperiment):
             default_callbacks.append(("_timer", TimerCallback))
         if self._check_run:
             default_callbacks.append(("_check", CheckRunCallback))
-        if self._overfit:
-            default_callbacks.append(("_overfit", BatchOverfitCallback))
 
         if not stage.startswith("infer"):
             default_callbacks.append(("_metrics", MetricManagerCallback))

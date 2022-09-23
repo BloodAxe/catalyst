@@ -1,13 +1,12 @@
-from typing import Dict, Iterable, List, Union
 import collections
 import os
 import re
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
-
 import torch
-from torch import nn, Tensor
 import torch.backends
+from torch import nn, Tensor
 from torch.backends import cudnn
 
 from catalyst.settings import IS_XLA_AVAILABLE

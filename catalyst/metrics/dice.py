@@ -3,7 +3,6 @@ Dice metric.
 """
 
 import numpy as np
-
 import torch
 
 from catalyst.utils.torch import get_activation_fn

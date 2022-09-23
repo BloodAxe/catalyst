@@ -1,5 +1,5 @@
-from typing import Dict, List, Union
 from collections import OrderedDict
+from typing import Dict, List, Union
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackWrapper
 from catalyst.utils.distributed import get_rank

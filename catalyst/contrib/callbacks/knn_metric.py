@@ -1,7 +1,8 @@
-from typing import Dict, List, TYPE_CHECKING
 from math import ceil
+from typing import Dict, List, TYPE_CHECKING
 
 import numpy as np
+import torch
 from scipy import stats
 from sklearn.metrics import (
     accuracy_score,
@@ -10,8 +11,6 @@ from sklearn.metrics import (
     recall_score,
 )
 from sklearn.neighbors import NearestNeighbors
-
-import torch
 
 from catalyst.core.callback import Callback, CallbackOrder
 

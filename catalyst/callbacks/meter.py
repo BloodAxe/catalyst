@@ -1,5 +1,5 @@
-from typing import List, TYPE_CHECKING
 from collections import defaultdict
+from typing import List, TYPE_CHECKING
 
 import numpy as np
 

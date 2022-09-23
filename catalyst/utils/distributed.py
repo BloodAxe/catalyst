@@ -1,15 +1,14 @@
-from typing import Union
-from collections import OrderedDict
 import os
 import random
 import socket
 import subprocess
-
-from packaging.version import parse, Version
+from collections import OrderedDict
+from typing import Union
 
 import torch
-from torch import nn
 import torch.distributed
+from packaging.version import parse, Version
+from torch import nn
 
 from catalyst.utils.misc import get_fn_default_params
 from catalyst.utils.torch import get_available_gpus

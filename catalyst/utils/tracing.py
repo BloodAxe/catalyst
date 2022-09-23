@@ -1,7 +1,7 @@
-from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
 import inspect
 import logging
 from pathlib import Path
+from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
 
 from torch import jit, nn
 
@@ -18,7 +18,6 @@ from catalyst.utils.distributed import (
 )
 from catalyst.utils.loaders import get_native_batch_from_loaders
 from catalyst.utils.misc import get_fn_argsnames
-from catalyst.utils.scripts import prepare_config_api_components
 from catalyst.utils.torch import (
     any2device,
     get_requires_grad,

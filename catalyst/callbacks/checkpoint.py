@@ -1,7 +1,7 @@
-from typing import Callable, Dict, Tuple, TYPE_CHECKING, Union
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 from pathlib import Path
+from typing import Callable, Dict, Tuple, TYPE_CHECKING, Union
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.utils.checkpoint import (
@@ -223,10 +223,7 @@ class BaseCheckpointCallback(ICheckpointCallback):
         if not is_exception(exception):
             return
 
-        if runner.device.type == "xla":
-            from torch_xla.core.xla_model import save
-        else:
-            from torch import save
+        from torch import save
 
         try:
             checkpoint = _pack_runner(runner)
@@ -563,10 +560,7 @@ class CheckpointCallback(BaseCheckpointCallback):
         Args:
             runner: current runner
         """
-        if runner.device.type == "xla":
-            from torch_xla.core.xla_model import save
-        else:
-            from torch import save
+        from torch import save
         self._save_fn = save
 
         if getattr(runner, "resume", None) is not None:
@@ -826,10 +820,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
         if self.stage_restart:
             self._iteration_counter = 0
 
-        if runner.device.type == "xla":
-            from torch_xla.core.xla_model import save
-        else:
-            from torch import save
+        from torch import save
         self._save_fn = save
 
     def on_batch_end(self, runner: "IRunner"):

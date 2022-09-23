@@ -1,5 +1,4 @@
 # flake8: noqa
-from torch.nn.modules import *
 
 from catalyst.contrib.nn.modules.arcface import ArcFace, SubCenterArcFace
 from catalyst.contrib.nn.modules.arcmargin import ArcMarginProduct

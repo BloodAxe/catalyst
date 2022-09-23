@@ -1,9 +1,10 @@
-from typing import Callable, Dict, Optional, Sequence, Tuple
 from functools import partial
+from typing import Callable, Dict, Optional, Sequence, Tuple
 
 import torch
 from torch import Tensor
 from torch.nn import functional as F
+
 
 # @TODO:
 # after full classification metrics re-implementation, make a reference to

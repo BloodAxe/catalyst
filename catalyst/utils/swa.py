@@ -1,8 +1,8 @@
-from typing import List, Union
-from collections import OrderedDict
 import glob
 import os
+from collections import OrderedDict
 from pathlib import Path
+from typing import List, Union
 
 import torch
 

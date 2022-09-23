@@ -1,7 +1,7 @@
 # flake8: noqa
 # TODO: add docs and refactor
-from functools import partial
 import math
+from functools import partial
 
 import torch
 from torch import nn

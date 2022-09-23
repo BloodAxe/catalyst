@@ -1,10 +1,9 @@
-from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
+import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict, Mapping, Iterable
-import logging
+from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
 
 import numpy as np
-
 import torch
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder

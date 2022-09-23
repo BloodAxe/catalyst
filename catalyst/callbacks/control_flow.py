@@ -1,5 +1,5 @@
-from typing import Callable, Mapping, Sequence, TYPE_CHECKING, Union
 from collections import OrderedDict
+from typing import Callable, Mapping, Sequence, TYPE_CHECKING, Union
 
 from catalyst.core.callback import Callback, CallbackWrapper
 

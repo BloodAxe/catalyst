@@ -1,7 +1,7 @@
-from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
 from abc import ABC, abstractmethod
 from collections import defaultdict, OrderedDict
 from pathlib import Path
+from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -13,7 +13,6 @@ from catalyst.core.functional import (
     filter_callbacks_by_node,
     sort_callbacks_by_order,
 )
-from catalyst.core.legacy import IRunnerLegacy
 from catalyst.settings import SETTINGS
 from catalyst.tools.frozen_class import FrozenClass
 from catalyst.typing import (
@@ -46,7 +45,7 @@ class RunnerException(Exception):
         super().__init__(message)
 
 
-class IRunner(ABC, IRunnerLegacy, FrozenClass):
+class IRunner(ABC, FrozenClass):
     """
     An abstraction that knows how to run an experiment.
     It contains all the logic of **how** to run the experiment,

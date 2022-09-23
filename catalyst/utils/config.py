@@ -1,9 +1,9 @@
-from typing import Dict, List, Union
-from collections import OrderedDict
 import json
+import re
+from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-import re
+from typing import Dict, List, Union
 
 import yaml
 

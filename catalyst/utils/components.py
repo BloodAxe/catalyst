@@ -1,9 +1,9 @@
-from typing import Dict, Tuple
 import copy
+from typing import Dict, Tuple
 
 import torch
-from torch import nn
 import torch.distributed
+from torch import nn
 
 from catalyst.settings import IS_XLA_AVAILABLE
 from catalyst.typing import Criterion, Device, Model, Optimizer, Scheduler

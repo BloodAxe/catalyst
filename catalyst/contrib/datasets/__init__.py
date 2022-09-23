@@ -1,15 +1,13 @@
 # flake8: noqa
 import logging
 
-from catalyst.settings import SETTINGS
-
 from catalyst.contrib.datasets.mnist import (
     MnistMLDataset,
     MnistQGDataset,
     MNIST,
 )
-
 from catalyst.contrib.datasets.movielens import MovieLens
+from catalyst.settings import SETTINGS
 
 logger = logging.getLogger(__name__)
 

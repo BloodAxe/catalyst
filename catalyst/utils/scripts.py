@@ -1,16 +1,14 @@
-from typing import Callable, Dict, Union
-from importlib.util import module_from_spec, spec_from_file_location
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
 import warnings
+from importlib.util import module_from_spec, spec_from_file_location
+from typing import Callable, Union
 
 import torch
 import torch.distributed
-
-from catalyst.registry import EXPERIMENTS, RUNNERS
 from catalyst.utils.distributed import (
     get_distributed_env,
     get_distributed_params,
@@ -42,46 +40,6 @@ def import_module(expdir: Union[str, pathlib.Path]):
     sys.modules[expdir.name] = m
     return m
 
-
-def prepare_config_api_components(expdir: pathlib.Path, config: Dict):
-    """
-    Imports and create core Config API components - Experiment, Runner
-    and Config from ``expdir`` - experiment directory
-    and ``config`` - experiment config.
-
-    Args:
-        expdir: experiment directory path
-        config: dictionary with experiment Config
-
-    Returns:
-        Experiment, Runner, Config for Config API usage.
-    """
-    if not isinstance(expdir, pathlib.Path):
-        expdir = pathlib.Path(expdir)
-    m = import_module(expdir)
-    experiment_fn = getattr(m, "Experiment", None)
-    runner_fn = getattr(m, "Runner", None)
-
-    experiment_params = config.get("experiment_params", {})
-    experiment_from_config = experiment_params.pop("experiment", None)
-    assert any(
-        x is None for x in (experiment_fn, experiment_from_config)
-    ), "Experiment is set both in code and config."
-    if experiment_fn is None and experiment_from_config is not None:
-        experiment_fn = EXPERIMENTS.get(experiment_from_config)
-
-    runner_params = config.get("runner_params", {})
-    runner_from_config = runner_params.pop("runner", None)
-    assert any(
-        x is None for x in (runner_fn, runner_from_config)
-    ), "Runner is set both in code and config."
-    if runner_fn is None and runner_from_config is not None:
-        runner_fn = RUNNERS.get(runner_from_config)
-
-    experiment = experiment_fn(config)
-    runner = runner_fn(**runner_params)
-
-    return experiment, runner, config
 
 
 def _tricky_dir_copy(dir_from: str, dir_to: str) -> None:
@@ -200,7 +158,6 @@ __all__ = [
     "import_module",
     "dump_code",
     "dump_python_files",
-    "prepare_config_api_components",
     "dump_experiment_code",
     "distributed_cmd_run",
 ]

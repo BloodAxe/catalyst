@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING, Union
-from pathlib import Path
 import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Union
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.utils.tracing import save_traced_model, trace_model_from_runner

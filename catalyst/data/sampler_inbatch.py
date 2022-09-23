@@ -1,17 +1,16 @@
-from typing import List, Tuple, Union
 from abc import ABC, abstractmethod
 from collections import Counter
 from itertools import combinations, product
 from random import sample
 from sys import maxsize
+from typing import List, Tuple, Union
 
 import numpy as np
-
 import torch
 from torch import Tensor
 
-from catalyst.contrib.utils.misc import find_value_ids
 from catalyst.data.utils import convert_labels2list
+from catalyst.utils.misc import find_value_ids
 from catalyst.utils.torch import normalize
 
 # order in the triplets: (anchor, positive, negative)

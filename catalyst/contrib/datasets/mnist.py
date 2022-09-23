@@ -1,6 +1,6 @@
 # flake8: noqa
-from typing import Any, Callable, Dict, List, Optional
 import os
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
 from torch.utils.data import Dataset

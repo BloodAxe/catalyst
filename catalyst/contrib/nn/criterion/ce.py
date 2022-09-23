@@ -5,30 +5,6 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class NaiveCrossEntropyLoss(nn.Module):
-    """@TODO: Docs. Contribution is welcome."""
-
-    def __init__(self, size_average=True):
-        """@TODO: Docs. Contribution is welcome."""
-        super().__init__()
-        self.size_average = size_average
-
-    def forward(
-        self, input_: torch.Tensor, target: torch.Tensor
-    ) -> torch.Tensor:
-        """Calculates loss between ``input_`` and ``target`` tensors.
-
-        Args:
-            input_: input tensor of shape ...
-            target: target tensor of shape ...
-
-        @TODO: Docs (add shapes). Contribution is welcome.
-        """
-        assert input_.size() == target.size()
-        input_ = F.log_softmax(input_)
-        loss = -torch.sum(input_ * target)
-        loss = loss / input_.size()[0] if self.size_average else loss
-        return loss
 
 
 class SymmetricCrossEntropyLoss(nn.Module):
@@ -114,5 +90,4 @@ class MaskCrossEntropyLoss(nn.Module):
 __all__ = [
     "MaskCrossEntropyLoss",
     "SymmetricCrossEntropyLoss",
-    "NaiveCrossEntropyLoss",
 ]

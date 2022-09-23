@@ -1,5 +1,5 @@
-from typing import Dict, Optional, Set, TYPE_CHECKING, Union
 from pathlib import Path
+from typing import Dict, Optional, Set, TYPE_CHECKING, Union
 
 import torch
 from torch import quantization

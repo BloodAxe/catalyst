@@ -4,8 +4,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from catalyst.registry import MODULE
-
 
 class GlobalAvgPool2d(nn.Module):
     """Applies a 2D global average pooling operation over an input signal

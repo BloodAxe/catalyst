@@ -1,6 +1,6 @@
-from typing import Any, Callable, Dict, List, Optional, Union, Iterable, Mapping
 import collections
 import copy
+from typing import Any, Callable, Dict, List, Optional, Union, Iterable, Mapping
 
 
 def get_key_str(

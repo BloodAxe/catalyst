@@ -1,5 +1,5 @@
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
 import warnings
+from typing import Callable, List, Optional, TYPE_CHECKING, Union
 
 from torch.nn.utils import prune
 

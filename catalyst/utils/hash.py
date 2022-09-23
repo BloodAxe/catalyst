@@ -1,6 +1,6 @@
-from typing import Any
 from base64 import urlsafe_b64encode
 from hashlib import sha256
+from typing import Any
 
 
 def _make_hashable(o):

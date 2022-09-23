@@ -98,23 +98,6 @@ class UploadCommand(Command):
         sys.exit()
 
 
-# Specific dependencies.
-extras = {
-    "contrib": load_requirements("requirements/requirements-contrib.txt"),
-    "cv": load_requirements("requirements/requirements-cv.txt"),
-    # "dev": load_requirements("requirements/requirements-dev.txt"),
-    "ecosystem": load_requirements("requirements/requirements-ecosystem.txt"),
-    "ml": load_requirements("requirements/requirements-ml.txt"),
-    "nlp": load_requirements("requirements/requirements-nlp.txt"),
-}
-extras["contrib"] += extras["ecosystem"] + extras["cv"] + extras["nlp"]
-
-# Meta dependency groups.
-all_deps = []
-for group_name in extras:
-    all_deps += extras[group_name]
-extras["all"] = all_deps
-
 setup(
     name=NAME,
     version=load_version(),
@@ -143,20 +126,8 @@ setup(
         "Source Code": "https://github.com/catalyst-team/catalyst",
     },
     packages=find_packages(exclude=("tests",)),
-    entry_points={
-        "console_scripts": [
-            "catalyst-dl=catalyst.dl.__main__:main",
-            "catalyst-contrib=catalyst.contrib.__main__:main",
-            "catalyst-data=catalyst.data.__main__:main",
-        ],
-    },
-    scripts=[
-        "bin/scripts/catalyst-parallel-run",
-        "bin/scripts/download-gdrive",
-        "bin/scripts/extract-archive",
-    ],
     install_requires=load_requirements("requirements/requirements.txt"),
-    extras_require=extras,
+    extras_require={},
     include_package_data=True,
     license="Apache License 2.0",
     classifiers=[

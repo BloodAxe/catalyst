@@ -1,8 +1,9 @@
-from typing import Iterable, Tuple
 import os
+from typing import Iterable, Tuple
+
+from catalyst.data.cv import ImageFolderDataset
 
 from catalyst.contrib.datasets.functional import download_and_extract_archive
-from catalyst.data.cv import ImageFolderDataset
 
 
 class ImageClassificationDataset(ImageFolderDataset):

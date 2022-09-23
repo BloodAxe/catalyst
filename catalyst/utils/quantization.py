@@ -1,6 +1,6 @@
-from typing import Dict, Optional, Set, TYPE_CHECKING, Union
 import logging
 from pathlib import Path
+from typing import Dict, Optional, Set, TYPE_CHECKING, Union
 
 import torch
 from torch import quantization
@@ -10,7 +10,6 @@ from catalyst.typing import Model
 from catalyst.utils import (
     load_checkpoint,
     load_config,
-    prepare_config_api_components,
     unpack_checkpoint,
 )
 

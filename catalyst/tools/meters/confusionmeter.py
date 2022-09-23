@@ -2,7 +2,6 @@
 Maintains a confusion matrix for a given classification problem.
 """
 import numpy as np
-
 import torch
 
 from catalyst.tools.meters import meter

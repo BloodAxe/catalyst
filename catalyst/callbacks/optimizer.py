@@ -1,10 +1,10 @@
-from typing import Callable, Dict, List, TYPE_CHECKING
 import logging
 import warnings
+from typing import Callable, Dict, List, TYPE_CHECKING
 
+import hydra.utils
 import torch
 
-from catalyst import registry
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
 from catalyst.utils.misc import maybe_recursive_call
@@ -15,10 +15,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-try:
-    import torch_xla.core.xla_model as xm
-except ModuleNotFoundError:
-    pass
 
 
 def zero_grad(optimizer: Optimizer) -> None:
@@ -49,8 +45,7 @@ class OptimizerCallback(IOptimizerCallback):
         grad_clip_params: Dict = None,
         decouple_weight_decay: bool = True,
         loss_key: str = None,
-        use_fast_zero_grad: bool = False,
-        xla_barrier: bool = True,
+        use_fast_zero_grad: bool = True,
     ):
         """
         Args:
@@ -64,15 +59,6 @@ class OptimizerCallback(IOptimizerCallback):
                 regularization.
             use_fast_zero_grad: boost ``optimizer.zero_grad()``,
                 default is ``False``.
-            xla_barrier: barrier option for xla. Here you can find
-                more about usage of `barrier flag
-                <https://pytorch.org/xla/release/1.5/index.html?
-                highlight=optimizer_step#torch_xla.core.xla_model.optimizer_step>`_
-                and `examples
-                <https://pytorch.org/xla/release/1.5/index.html#
-                running-on-a-single-xla-device>`_.
-
-                Default is ``True``.
         """
         super().__init__(order=CallbackOrder.optimizer, node=CallbackNode.all)
         assert metric_key is None or loss_key is None
@@ -88,17 +74,14 @@ class OptimizerCallback(IOptimizerCallback):
         self.accumulation_steps: int = accumulation_steps
         self._accumulation_counter: int = 0
 
-        grad_clip_params: dict = grad_clip_params or {}
-        self.grad_clip_fn = registry.GRAD_CLIPPER.get_from_params(
+        self.grad_clip_fn = hydra.utils.instantiate(
             **grad_clip_params
-        )
+        ) if grad_clip_params is not None else None
 
         self.decouple_weight_decay = decouple_weight_decay
         self._optimizer_wd: List[float] = [0.0]
         self._optimizer_step_fn: Callable = None
-        self.is_xla = False
         self.use_fast_zero_grad = use_fast_zero_grad
-        self.use_xla_barrier = xla_barrier
 
     def _optimizer_step(self, optimizer: Optimizer) -> None:
         """CPU and GPU optimization step.
@@ -108,16 +91,7 @@ class OptimizerCallback(IOptimizerCallback):
         """
         optimizer.step()
 
-    def _optimizer_step_tpu(self, optimizer: Optimizer) -> None:
-        """TPU optimization step.
 
-        Args:
-            optimizer: optimizer object
-        """
-        if self.use_xla_barrier:
-            xm.optimizer_step(optimizer, barrier=True)
-        else:
-            xm.optimizer_step(optimizer)
 
     def grad_step(
         self,
@@ -153,10 +127,7 @@ class OptimizerCallback(IOptimizerCallback):
             key="optimizer", inner_key=self.optimizer_key
         )
         # device based optimization step
-        if runner.device.type == "xla":
-            self._optimizer_step_fn = self._optimizer_step_tpu
-        else:
-            self._optimizer_step_fn = self._optimizer_step
+        self._optimizer_step_fn = self._optimizer_step
 
         assert self._optimizer is not None
 
@@ -192,24 +163,7 @@ class OptimizerCallback(IOptimizerCallback):
             self._accumulation_counter % self.accumulation_steps == 0
         )
 
-        # This is very hacky check whether we have AMP optimizer and this may
-        # change in future.
-        # But alternative solution is to have AmpOptimizerCallback.
-        # or expose another c'tor argument.
-        # @TODO: speedup with re-definition ``on_stage_start``
-        if hasattr(self._optimizer, "_amp_stash"):
-            from apex import amp
-
-            # Need to set ``delay_unscale``
-            # according to
-            # https://nvidia.github.io/apex/advanced.html#gradient-accumulation-across-iterations
-            delay_unscale = not need_gradient_step
-            with amp.scale_loss(
-                loss, self._optimizer, delay_unscale=delay_unscale
-            ) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            loss.backward()
+        loss.backward()
 
         if need_gradient_step:
             self.grad_step(
@@ -291,10 +245,9 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self._accumulation_counter: int = 0
         self.use_fast_zero_grad = use_fast_zero_grad
 
-        grad_clip_params: dict = grad_clip_params or {}
-        self.grad_clip_fn = registry.GRAD_CLIPPER.get_from_params(
+        self.grad_clip_fn = hydra.utils.instantiate(
             **grad_clip_params
-        )
+        ) if grad_clip_params is not None else None
 
         # Initialized at on_state_start()
         self.scaler = None
@@ -410,20 +363,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.scaler = None
 
 
-# @TODO: add OptimizerCallback autocreation
-# def OptimizerCallback(*args, **kwargs):
-#     """
-#     Optimizer callback factory-wrapper to select required OptimizerCallback
-#     automatically.
-#     """
-#     is_amp_enabled = (
-#         os.getenv("USE_AMP", "0") == "1" and utils.check_amp_available()
-#     )
-#
-#     optimizer_callback = AMPOptimizerCallback(*args, **kwargs) \
-#         if is_amp_enabled \
-#         else OptimizerCallback(*args, **kwargs)
-#     return optimizer_callback
+
 
 
 __all__ = [
