@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import Callable, Dict, List, TYPE_CHECKING
+from typing import Callable, Dict, List, TYPE_CHECKING, Mapping
 
 import hydra.utils
 import torch
@@ -107,7 +107,7 @@ class OptimizerCallback(IOptimizerCallback):
         self.accumulation_steps: int = accumulation_steps
         self._accumulation_counter: int = 0
 
-        self.grad_clip_fn = hydra.utils.instantiate(**grad_clip_params) if grad_clip_params is not None else None
+        self.grad_clip_params = grad_clip_params
 
         self._optimizer_step_fn: Callable = None
         self.use_fast_zero_grad = use_fast_zero_grad
@@ -126,9 +126,9 @@ class OptimizerCallback(IOptimizerCallback):
 
     def grad_step(
         self,
-        *,
+        runner,
         optimizer: Optimizer,
-        grad_clip_fn: Callable = None,
+        grad_clip_params: Mapping = None,
     ) -> None:
         """Makes a gradient step for a given optimizer.
 
@@ -136,9 +136,17 @@ class OptimizerCallback(IOptimizerCallback):
             optimizer: the optimizer
             grad_clip_fn: function for gradient clipping
         """
+
+        # Clip
         for group in zip(optimizer.param_groups):
-            if grad_clip_fn is not None:
-                grad_clip_fn(group["params"])
+            torch.nn.utils.clip_grad_norm_(group["params"], **grad_clip_params)
+
+        # Log
+        if self.log_grad_norm:
+            grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
+            runner.batch_metrics.update(**grad_norm_dict)
+
+        # Step
         # optimize parameters
         self._optimizer_step_fn(optimizer)
 
@@ -174,13 +182,10 @@ class OptimizerCallback(IOptimizerCallback):
         loss.backward()
 
         if need_gradient_step:
-            if self.log_grad_norm:
-                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
-                runner.batch_metrics.update(**grad_norm_dict)
-
             self.grad_step(
+                runner,
                 optimizer=self._optimizer,
-                grad_clip_fn=self.grad_clip_fn,
+                grad_clip_params=self.grad_clip_params,
             )
             if not self.use_fast_zero_grad:
                 maybe_recursive_call(self._optimizer, "zero_grad")
@@ -247,7 +252,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self._accumulation_counter: int = 0
         self.use_fast_zero_grad = use_fast_zero_grad
 
-        self.grad_clip_fn = hydra.utils.instantiate(**grad_clip_params) if grad_clip_params is not None else None
+        self.grad_clip_params = grad_clip_params
 
         # Initialized at on_state_start()
         self.scaler = None
@@ -258,9 +263,9 @@ class AMPOptimizerCallback(IOptimizerCallback):
 
     def grad_step(
         self,
-        *,
+        runner,
         optimizer: Optimizer,
-        grad_clip_fn: Callable = None,
+        grad_clip_params=None,
     ) -> None:
         """Makes a gradient step for a given optimizer.
 
@@ -268,14 +273,20 @@ class AMPOptimizerCallback(IOptimizerCallback):
             optimizer: the optimizer
             grad_clip_fn: function for gradient clipping
         """
-        if grad_clip_fn is not None:
+        if grad_clip_params is not None or self.log_grad_norm:
             # Unscales the gradients of
             # optimizer's assigned params in-place
             self.scaler.unscale_(optimizer)
-            for group in optimizer.param_groups:
-                # Since the gradients of optimizer's
-                # assigned params are unscaled, clips as usual:
-                grad_clip_fn(group["params"])
+
+            if grad_clip_params is not None:
+                for group in optimizer.param_groups:
+                    # Since the gradients of optimizer's
+                    # assigned params are unscaled, clips as usual:
+                    torch.nn.utils.clip_grad_norm_(group["params"], **grad_clip_params)
+
+            if self.log_grad_norm:
+                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
+                runner.batch_metrics.update(**grad_norm_dict)
 
         self.scaler.step(optimizer)
         self.scaler.update()
@@ -325,13 +336,10 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.scaler.scale(loss).backward()
 
         if need_gradient_step:
-            if self.log_grad_norm:
-                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
-                runner.batch_metrics.update(**grad_norm_dict)
-
             self.grad_step(
+                runner,
                 optimizer=self._optimizer,
-                grad_clip_fn=self.grad_clip_fn,
+                grad_clip_params=self.grad_clip_params,
             )
             if not self.use_fast_zero_grad:
                 maybe_recursive_call(self._optimizer, "zero_grad")
