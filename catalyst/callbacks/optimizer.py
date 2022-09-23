@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-
 def zero_grad(optimizer: Optimizer) -> None:
     """Perform an hacky way to zero gradients.
 
@@ -43,7 +42,6 @@ class OptimizerCallback(IOptimizerCallback):
         optimizer_key: str = None,
         accumulation_steps: int = 1,
         grad_clip_params: Dict = None,
-        decouple_weight_decay: bool = True,
         loss_key: str = None,
         use_fast_zero_grad: bool = True,
     ):
@@ -55,8 +53,6 @@ class OptimizerCallback(IOptimizerCallback):
             accumulation_steps: number of steps before
                 ``model.zero_grad()``
             grad_clip_params: params for gradient clipping
-            decouple_weight_decay: If ``True`` - decouple weight decay
-                regularization.
             use_fast_zero_grad: boost ``optimizer.zero_grad()``,
                 default is ``False``.
         """
@@ -64,8 +60,7 @@ class OptimizerCallback(IOptimizerCallback):
         assert metric_key is None or loss_key is None
         if loss_key is not None:
             warnings.warn(
-                "OptimizerCallback: "
-                "`loss_key` is now deprecated in favor `metric_key`",
+                "OptimizerCallback: " "`loss_key` is now deprecated in favor `metric_key`",
                 stacklevel=2,
             )
         self.metric_key: str = metric_key or loss_key or "loss"
@@ -74,12 +69,8 @@ class OptimizerCallback(IOptimizerCallback):
         self.accumulation_steps: int = accumulation_steps
         self._accumulation_counter: int = 0
 
-        self.grad_clip_fn = hydra.utils.instantiate(
-            **grad_clip_params
-        ) if grad_clip_params is not None else None
+        self.grad_clip_fn = hydra.utils.instantiate(**grad_clip_params) if grad_clip_params is not None else None
 
-        self.decouple_weight_decay = decouple_weight_decay
-        self._optimizer_wd: List[float] = [0.0]
         self._optimizer_step_fn: Callable = None
         self.use_fast_zero_grad = use_fast_zero_grad
 
@@ -90,8 +81,6 @@ class OptimizerCallback(IOptimizerCallback):
             optimizer: optimizer object
         """
         optimizer.step()
-
-
 
     def grad_step(
         self,
@@ -108,10 +97,7 @@ class OptimizerCallback(IOptimizerCallback):
                 for each param group
             grad_clip_fn: function for gradient clipping
         """
-        for group, wd in zip(optimizer.param_groups, optimizer_wds):
-            if wd > 0:
-                for param in group["params"]:
-                    param.data = param.data.add(-wd * group["lr"], param.data)
+        for group in zip(optimizer.param_groups):
             if grad_clip_fn is not None:
                 grad_clip_fn(group["params"])
         # optimize parameters
@@ -123,29 +109,14 @@ class OptimizerCallback(IOptimizerCallback):
         Args:
             runner(IRunner): current runner
         """
-        self._optimizer = runner.get_attr(
-            key="optimizer", inner_key=self.optimizer_key
-        )
+        self._optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
         # device based optimization step
         self._optimizer_step_fn = self._optimizer_step
 
         assert self._optimizer is not None
 
-    def on_epoch_start(self, runner: "IRunner") -> None:
-        """On epoch start event.
-
-        Args:
-            runner: current runner
-        """
-        if self.decouple_weight_decay:
-            self._optimizer_wd = [
-                group.get("weight_decay", 0.0)
-                for group in self._optimizer.param_groups
-            ]
-            for i in range(len(self._optimizer.param_groups)):
-                self._optimizer.param_groups[i]["weight_decay"] = 0.0
-        else:
-            self._optimizer_wd = [0.0] * len(self._optimizer.param_groups)
+    def on_loader_start(self, runner: "IRunner"):
+        self._accumulation_counter = 0
 
     def on_batch_end(self, runner: "IRunner") -> None:
         """On batch end event
@@ -159,16 +130,13 @@ class OptimizerCallback(IOptimizerCallback):
         loss = runner.batch_metrics[self.metric_key]
 
         self._accumulation_counter += 1
-        need_gradient_step = (
-            self._accumulation_counter % self.accumulation_steps == 0
-        )
+        need_gradient_step = self._accumulation_counter % self.accumulation_steps == 0
 
         loss.backward()
 
         if need_gradient_step:
             self.grad_step(
                 optimizer=self._optimizer,
-                optimizer_wds=self._optimizer_wd,
                 grad_clip_fn=self.grad_clip_fn,
             )
             if not self.use_fast_zero_grad:
@@ -183,25 +151,14 @@ class OptimizerCallback(IOptimizerCallback):
         Args:
             runner: current runner
         """
-        if self.decouple_weight_decay:
-            for i, wd in enumerate(self._optimizer_wd):
-                self._optimizer.param_groups[i]["weight_decay"] = wd
 
         lr = self._optimizer.param_groups[0]["lr"]
-        lr_name = (
-            f"lr/{self.optimizer_key}"
-            if self.optimizer_key is not None
-            else "lr"
-        )
+        lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
 
         momentum = get_optimizer_momentum(self._optimizer)
         if momentum is not None:
-            momentum_name = (
-                f"momentum/{self.optimizer_key}"
-                if self.optimizer_key is not None
-                else "momentum"
-            )
+            momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
             runner.epoch_metrics[momentum_name] = momentum
 
 
@@ -234,8 +191,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         assert metric_key is None or loss_key is None
         if loss_key is not None:
             warnings.warn(
-                "OptimizerCallback: "
-                "`loss_key` is now deprecated in favor `metric_key`",
+                "OptimizerCallback: " "`loss_key` is now deprecated in favor `metric_key`",
                 stacklevel=2,
             )
         self.metric_key: str = metric_key or loss_key or "loss"
@@ -245,15 +201,16 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self._accumulation_counter: int = 0
         self.use_fast_zero_grad = use_fast_zero_grad
 
-        self.grad_clip_fn = hydra.utils.instantiate(
-            **grad_clip_params
-        ) if grad_clip_params is not None else None
+        self.grad_clip_fn = hydra.utils.instantiate(**grad_clip_params) if grad_clip_params is not None else None
 
         # Initialized at on_state_start()
         self.scaler = None
 
     def grad_step(
-        self, *, optimizer: Optimizer, grad_clip_fn: Callable = None,
+        self,
+        *,
+        optimizer: Optimizer,
+        grad_clip_fn: Callable = None,
     ) -> None:
         """Makes a gradient step for a given optimizer.
 
@@ -281,9 +238,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         """
         from torch.cuda.amp import GradScaler
 
-        self._optimizer = runner.get_attr(
-            key="optimizer", inner_key=self.optimizer_key
-        )
+        self._optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
         self.scaler = GradScaler()
         assert self._optimizer is not None
 
@@ -315,15 +270,14 @@ class AMPOptimizerCallback(IOptimizerCallback):
         loss = runner.batch_metrics[self.metric_key]
 
         self._accumulation_counter += 1
-        need_gradient_step = (
-            self._accumulation_counter % self.accumulation_steps == 0
-        )
+        need_gradient_step = self._accumulation_counter % self.accumulation_steps == 0
 
         self.scaler.scale(loss).backward()
 
         if need_gradient_step:
             self.grad_step(
-                optimizer=self._optimizer, grad_clip_fn=self.grad_clip_fn,
+                optimizer=self._optimizer,
+                grad_clip_fn=self.grad_clip_fn,
             )
             if not self.use_fast_zero_grad:
                 maybe_recursive_call(self._optimizer, "zero_grad")
@@ -338,20 +292,12 @@ class AMPOptimizerCallback(IOptimizerCallback):
             runner: current runner
         """
         lr = self._optimizer.param_groups[0]["lr"]
-        lr_name = (
-            f"lr/{self.optimizer_key}"
-            if self.optimizer_key is not None
-            else "lr"
-        )
+        lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
 
         momentum = get_optimizer_momentum(self._optimizer)
         if momentum is not None:
-            momentum_name = (
-                f"momentum/{self.optimizer_key}"
-                if self.optimizer_key is not None
-                else "momentum"
-            )
+            momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
             runner.epoch_metrics[momentum_name] = momentum
 
     def on_stage_end(self, runner: "IRunner") -> None:
@@ -361,9 +307,6 @@ class AMPOptimizerCallback(IOptimizerCallback):
             runner: current runner
         """
         self.scaler = None
-
-
-
 
 
 __all__ = [
