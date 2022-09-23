@@ -4,6 +4,7 @@ from typing import Callable, Dict, List, TYPE_CHECKING
 
 import hydra.utils
 import torch
+from torch import nn
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
@@ -27,6 +28,40 @@ def zero_grad(optimizer: Optimizer) -> None:
             p.grad = None
 
 
+def grad_norm(model: nn.Module, prefix: str, norm_type: int) -> Dict[str, float]:
+    """Computes gradient norms for a given model.
+
+    Args:
+        model: model which gradients to be saved.
+        prefix: prefix for keys in resulting dictionary.
+        norm_type: norm type of gradient norm.
+
+    Returns:
+        Dict: dictionary in which gradient norms are stored.
+    """
+    from torch.nn import DataParallel
+    from torch.nn.parallel import DistributedDataParallel
+
+    if isinstance(model, (DataParallel, DistributedDataParallel)):
+        model = model.module
+
+    total_norm = 0.0
+    grad_norm = {}
+
+    for tag, value in model.named_parameters():
+        tag = tag.replace(".", "/")
+        metrics_tag = f"{prefix}/{tag}"
+        param_norm = value.grad.data.norm(norm_type).item()
+        total_norm += param_norm**norm_type
+        grad_norm[metrics_tag] = param_norm
+
+    total_norm = total_norm ** (1.0 / norm_type)
+    metrics_tag = f"{prefix}/total"
+    grad_norm[metrics_tag] = total_norm
+
+    return grad_norm
+
+
 class IOptimizerCallback(Callback):
     """Optimizer callback interface, abstraction over optimizer step."""
 
@@ -44,6 +79,9 @@ class OptimizerCallback(IOptimizerCallback):
         grad_clip_params: Dict = None,
         loss_key: str = None,
         use_fast_zero_grad: bool = True,
+        log_grad_norm: bool = False,
+        grad_norm_type: int = 2,
+        grad_norm_prefix: str = "_grad_norm",
     ):
         """
         Args:
@@ -74,6 +112,10 @@ class OptimizerCallback(IOptimizerCallback):
         self._optimizer_step_fn: Callable = None
         self.use_fast_zero_grad = use_fast_zero_grad
 
+        self.log_grad_norm = log_grad_norm
+        self.grad_norm_prefix = grad_norm_prefix
+        self.grad_norm_type = grad_norm_type
+
     def _optimizer_step(self, optimizer: Optimizer) -> None:
         """CPU and GPU optimization step.
 
@@ -86,15 +128,12 @@ class OptimizerCallback(IOptimizerCallback):
         self,
         *,
         optimizer: Optimizer,
-        optimizer_wds: List[float] = 0,
         grad_clip_fn: Callable = None,
     ) -> None:
         """Makes a gradient step for a given optimizer.
 
         Args:
             optimizer: the optimizer
-            optimizer_wds: list of weight decay parameters
-                for each param group
             grad_clip_fn: function for gradient clipping
         """
         for group in zip(optimizer.param_groups):
@@ -135,6 +174,10 @@ class OptimizerCallback(IOptimizerCallback):
         loss.backward()
 
         if need_gradient_step:
+            if self.log_grad_norm:
+                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
+                runner.batch_metrics.update(**grad_norm_dict)
+
             self.grad_step(
                 optimizer=self._optimizer,
                 grad_clip_fn=self.grad_clip_fn,
@@ -175,6 +218,9 @@ class AMPOptimizerCallback(IOptimizerCallback):
         grad_clip_params: Dict = None,
         loss_key: str = None,
         use_fast_zero_grad: bool = True,
+        log_grad_norm: bool = False,
+        grad_norm_type: int = 2,
+        grad_norm_prefix: str = "_grad_norm",
     ):
         """
         Args:
@@ -205,6 +251,10 @@ class AMPOptimizerCallback(IOptimizerCallback):
 
         # Initialized at on_state_start()
         self.scaler = None
+
+        self.log_grad_norm = log_grad_norm
+        self.grad_norm_type = grad_norm_type
+        self.grad_norm_prefix = grad_norm_prefix
 
     def grad_step(
         self,
@@ -275,6 +325,10 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.scaler.scale(loss).backward()
 
         if need_gradient_step:
+            if self.log_grad_norm:
+                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
+                runner.batch_metrics.update(**grad_norm_dict)
+
             self.grad_step(
                 optimizer=self._optimizer,
                 grad_clip_fn=self.grad_clip_fn,
