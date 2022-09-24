@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, TYPE_CHECKING, Mapping
 import hydra.utils
 import torch
 from torch import nn
+from torch.distributed.optim import ZeroRedundancyOptimizer
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
@@ -201,6 +202,9 @@ class OptimizerCallback(IOptimizerCallback):
             runner: current runner
         """
 
+        if isinstance(self._optimizer, ZeroRedundancyOptimizer):
+            self._optimizer.consolidate_state_dict()
+
         lr = self._optimizer.param_groups[0]["lr"]
         lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
@@ -354,6 +358,9 @@ class AMPOptimizerCallback(IOptimizerCallback):
         Args:
             runner: current runner
         """
+        if isinstance(self._optimizer, ZeroRedundancyOptimizer):
+            self._optimizer.consolidate_state_dict()
+
         lr = self._optimizer.param_groups[0]["lr"]
         lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
