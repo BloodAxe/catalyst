@@ -74,7 +74,7 @@ def assert_fp16_available() -> None:
 
 
 def initialize_apex(model, optimizer=None, **distributed_params):
-    """@TODO: Docs. Contribution is welcome."""
+    
     import apex
 
     amp_params = get_fn_default_params(

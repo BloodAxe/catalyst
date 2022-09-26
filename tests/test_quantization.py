@@ -10,12 +10,8 @@ from catalyst import dl
 from catalyst.contrib.datasets import MNIST
 from catalyst.contrib.nn.modules import Flatten
 from catalyst.data.cv import ToTensor
-from catalyst.settings import IS_QUANTIZATION_AVAILABLE
 
 
-@pytest.mark.skipif(
-    not IS_QUANTIZATION_AVAILABLE, reason="torch version too low"
-)
 def test_pruning_callback() -> None:
     """Quantize model"""
     loaders = {

@@ -13,8 +13,6 @@ from catalyst.utils import (
     unpack_checkpoint,
 )
 
-if TYPE_CHECKING:
-    from catalyst.experiments import ConfigExperiment
 
 
 logger = logging.getLogger(__name__)

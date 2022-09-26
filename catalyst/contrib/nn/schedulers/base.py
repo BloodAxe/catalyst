@@ -11,8 +11,7 @@ class BaseScheduler(_LRScheduler, ABC):
 
     @abstractmethod
     def get_momentum(self) -> List[float]:
-        """Function that returns the new momentum for optimizer.
-        """
+        """Function that returns the new momentum for optimizer."""
         pass
 
     def step(self, epoch: Optional[int] = None) -> None:
@@ -28,7 +27,7 @@ class BaseScheduler(_LRScheduler, ABC):
 
 
 class BatchScheduler(BaseScheduler, ABC):
-    """@TODO: Docs. Contribution is welcome."""
+    pass
 
 
 __all__ = ["BaseScheduler", "BatchScheduler"]

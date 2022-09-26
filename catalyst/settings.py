@@ -14,26 +14,6 @@ try:
 except ImportError:
     IS_GIT_AVAILABLE = False
 
-try:
-    import torch_xla.core.xla_model as xm  # noqa: F401
-
-    IS_XLA_AVAILABLE = True
-except ModuleNotFoundError:
-    IS_XLA_AVAILABLE = False
-
-try:
-    import torch.nn.utils.prune as prune  # noqa: F401
-
-    IS_PRUNING_AVAILABLE = True
-except ModuleNotFoundError:
-    IS_PRUNING_AVAILABLE = False
-
-try:
-    import torch.quantization  # noqa: F401
-
-    IS_QUANTIZATION_AVAILABLE = True
-except ModuleNotFoundError:
-    IS_QUANTIZATION_AVAILABLE = False
 
 try:
     import optuna  # noqa: F401
@@ -86,50 +66,30 @@ class Settings(FrozenClass):
         self.loader_infer_prefix: str = "infer"
 
         # [catalyst-contrib]
-        self.alchemy_logger_required: bool = self._optional_value(
-            alchemy_logger_required, default=contrib_required
-        )
-        self.neptune_logger_required: bool = self._optional_value(
-            neptune_logger_required, default=contrib_required
-        )
-        self.visdom_logger_required: bool = self._optional_value(
-            visdom_logger_required, default=contrib_required
-        )
-        self.wandb_logger_required: bool = self._optional_value(
-            wandb_logger_required, default=contrib_required
-        )
-        self.optuna_required: bool = self._optional_value(
-            optuna_required, default=contrib_required
-        )
-        self.plotly_required: bool = self._optional_value(
-            plotly_required, default=contrib_required
-        )
+        self.alchemy_logger_required: bool = self._optional_value(alchemy_logger_required, default=contrib_required)
+        self.neptune_logger_required: bool = self._optional_value(neptune_logger_required, default=contrib_required)
+        self.visdom_logger_required: bool = self._optional_value(visdom_logger_required, default=contrib_required)
+        self.wandb_logger_required: bool = self._optional_value(wandb_logger_required, default=contrib_required)
+        self.optuna_required: bool = self._optional_value(optuna_required, default=contrib_required)
+        self.plotly_required: bool = self._optional_value(plotly_required, default=contrib_required)
         self.telegram_logger_token: str = telegram_logger_token
         self.telegram_logger_chat_id: str = telegram_logger_chat_id
         self.use_lz4: bool = use_lz4
         self.use_pyarrow: bool = use_pyarrow
 
         # [catalyst-cv]
-        self.albumentations_required: bool = self._optional_value(
-            albumentations_required, default=cv_required
-        )
-        self.kornia_required: bool = self._optional_value(
-            kornia_required, default=cv_required
-        )
+        self.albumentations_required: bool = self._optional_value(albumentations_required, default=cv_required)
+        self.kornia_required: bool = self._optional_value(kornia_required, default=cv_required)
         self.segmentation_models_required: bool = self._optional_value(
             segmentation_models_required, default=cv_required
         )
         self.use_libjpeg_turbo: bool = use_libjpeg_turbo
 
         # [catalyst-ml]
-        self.nmslib_required: bool = self._optional_value(
-            nmslib_required, default=ml_required
-        )
+        self.nmslib_required: bool = self._optional_value(nmslib_required, default=ml_required)
 
         # [catalyst-nlp]
-        self.transformers_required: bool = self._optional_value(
-            transformers_required, default=nlp_required
-        )
+        self.transformers_required: bool = self._optional_value(transformers_required, default=nlp_required)
 
     @staticmethod
     def _optional_value(value, default):
@@ -191,9 +151,7 @@ class ConfigFileFinder:
             home_dir = os.path.expanduser("~")
             config_file_basename = f".{program_name}"
         else:
-            home_dir = os.environ.get(
-                "XDG_CONFIG_HOME", os.path.expanduser("~/.config")
-            )
+            home_dir = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
             config_file_basename = program_name
 
         return os.path.join(home_dir, config_file_basename)
@@ -210,13 +168,11 @@ class ConfigFileFinder:
                 found_files.extend(config.read(filename))
             except UnicodeDecodeError:
                 logger.exception(
-                    f"There was an error decoding a config file."
-                    f" The file with a problem was {filename}."
+                    f"There was an error decoding a config file." f" The file with a problem was {filename}."
                 )
             except configparser.ParsingError:
                 logger.exception(
-                    f"There was an error trying to parse a config file."
-                    f" The file with a problem was {filename}."
+                    f"There was an error trying to parse a config file." f" The file with a problem was {filename}."
                 )
 
         return config, found_files
@@ -231,9 +187,7 @@ class ConfigFileFinder:
         found_config_files = False
         while tail and not found_config_files:
             for project_filename in self.project_filenames:
-                filename = os.path.abspath(
-                    os.path.join(parent, project_filename)
-                )
+                filename = os.path.abspath(os.path.join(parent, project_filename))
                 if os.path.exists(filename):
                     yield filename
                     found_config_files = True
@@ -293,12 +247,9 @@ class MergedConfigParser:
         self.config_finder = config_finder
 
     def _normalize_value(self, option, value):
-        final_value = option.normalize(
-            value, self.config_finder.local_directory
-        )
+        final_value = option.normalize(value, self.config_finder.local_directory)
         logger.debug(
-            f"{value} has been normalized to {final_value}"
-            f" for option '{option.config_name}'",
+            f"{value} has been normalized to {final_value}" f" for option '{option.config_name}'",
         )
         return final_value
 
@@ -313,9 +264,7 @@ class MergedConfigParser:
             for option_name in config_parser.options(self.program_name):
                 type_ = DEFAULT_SETTINGS.type_hint(option_name)
                 method = type2method.get(type_, config_parser.get)
-                config_dict[option_name] = method(
-                    self.program_name, option_name
-                )
+                config_dict[option_name] = method(self.program_name, option_name)
 
         return config_dict
 
@@ -340,11 +289,6 @@ class MergedConfigParser:
 
 SETTINGS = Settings.parse()
 setattr(SETTINGS, "IS_GIT_AVAILABLE", IS_GIT_AVAILABLE)  # noqa: B010
-setattr(SETTINGS, "IS_XLA_AVAILABLE", IS_XLA_AVAILABLE)  # noqa: B010
-setattr(SETTINGS, "IS_PRUNING_AVAILABLE", IS_PRUNING_AVAILABLE)  # noqa: B010
-setattr(  # noqa: B010
-    SETTINGS, "IS_QUANTIZATION_AVAILABLE", IS_QUANTIZATION_AVAILABLE
-)
 
 
 __all__ = [
@@ -352,8 +296,5 @@ __all__ = [
     "Settings",
     "ConfigFileFinder",
     "MergedConfigParser",
-    "IS_PRUNING_AVAILABLE",
-    "IS_XLA_AVAILABLE",
     "IS_GIT_AVAILABLE",
-    "IS_QUANTIZATION_AVAILABLE",
 ]

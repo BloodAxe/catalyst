@@ -45,13 +45,6 @@ from catalyst.callbacks.scheduler import (
 from catalyst.callbacks.timer import TimerCallback
 from catalyst.callbacks.tracing import TracingCallback, TracerCallback
 from catalyst.callbacks.validation import ValidationManagerCallback
-from catalyst.settings import (
-    IS_QUANTIZATION_AVAILABLE,
-    IS_PRUNING_AVAILABLE,
-)
 
-if IS_QUANTIZATION_AVAILABLE:
-    from catalyst.callbacks.quantization import DynamicQuantizationCallback
-
-if IS_PRUNING_AVAILABLE:
-    from catalyst.callbacks.pruning import PruningCallback
+from catalyst.callbacks.quantization import DynamicQuantizationCallback
+from catalyst.callbacks.pruning import PruningCallback

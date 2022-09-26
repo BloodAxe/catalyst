@@ -186,7 +186,7 @@ class TripletLoss(nn.Module):
 
 
 class TripletLossV2(nn.Module):
-    """@TODO: Docs. Contribution is welcome."""
+    
 
     def __init__(self, margin=0.3):
         """
@@ -197,7 +197,7 @@ class TripletLossV2(nn.Module):
         self.margin = margin
 
     def forward(self, embeddings, targets):
-        """@TODO: Docs. Contribution is welcome."""
+        
         return triplet_loss(embeddings, targets, margin=self.margin)
 
 

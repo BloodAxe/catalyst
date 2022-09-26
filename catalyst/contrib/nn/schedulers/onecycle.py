@@ -191,7 +191,7 @@ class OneCycleLRWithWarmup(BatchScheduler):
         return [momentum] * self.total_groups
 
     def reset(self):
-        """@TODO: Docs. Contribution is welcome."""
+        
         self._calculate_lr_momentum(
             self.warmup_steps, self.lr_annealing_steps, self.decay_steps
         )

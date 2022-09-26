@@ -1,8 +1,11 @@
 import inspect
 import shutil
 from datetime import datetime
+from itertools import tee
 from pathlib import Path
 from typing import Any, Callable, List, Union, Iterable, Optional
+
+import numpy as np
 
 
 def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
@@ -35,11 +38,7 @@ def make_tuple(tuple_like):
     Returns:
         tuple or list
     """
-    tuple_like = (
-        tuple_like
-        if isinstance(tuple_like, (list, tuple))
-        else (tuple_like, tuple_like)
-    )
+    tuple_like = tuple_like if isinstance(tuple_like, (list, tuple)) else (tuple_like, tuple_like)
     return tuple_like
 
 
@@ -101,9 +100,7 @@ def maybe_recursive_call(
         result = type(object_or_dict)()
         for k, v in object_or_dict.items():
             r_args = None if recursive_args is None else recursive_args[k]
-            r_kwargs = (
-                None if recursive_kwargs is None else recursive_kwargs[k]
-            )
+            r_kwargs = None if recursive_kwargs is None else recursive_kwargs[k]
             result[k] = maybe_recursive_call(
                 v,
                 method,
@@ -189,9 +186,7 @@ def get_fn_default_params(fn: Callable[..., Any], exclude: List[str] = None):
         dict: contains default parameters of `fn`
     """
     argspec = inspect.getfullargspec(fn)
-    default_params = zip(
-        argspec.args[-len(argspec.defaults) :], argspec.defaults
-    )
+    default_params = zip(argspec.args[-len(argspec.defaults) :], argspec.defaults)
     if exclude is not None:
         default_params = filter(lambda x: x[0] not in exclude, default_params)
     default_params = dict(default_params)
@@ -242,5 +237,9 @@ __all__ = [
     "get_utcnow_time",
     "is_exception",
     "maybe_recursive_call",
-    "fn_ends_with_pass","args_are_not_none", "make_tuple", "pairwise", "find_value_ids"
+    "fn_ends_with_pass",
+    "args_are_not_none",
+    "make_tuple",
+    "pairwise",
+    "find_value_ids",
 ]

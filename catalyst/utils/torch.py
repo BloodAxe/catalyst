@@ -9,7 +9,6 @@ import torch.backends
 from torch import nn, Tensor
 from torch.backends import cudnn
 
-from catalyst.settings import IS_XLA_AVAILABLE
 from catalyst.typing import Device, Model, Optimizer
 from catalyst.utils.dict import merge_dicts
 
@@ -60,11 +59,7 @@ def get_device() -> torch.device:
     """Simple returning the best available device (TPU > GPU > CPU)."""
     is_available_gpu = torch.cuda.is_available()
     device = "cpu"
-    if IS_XLA_AVAILABLE:
-        import torch_xla.core.xla_model as xm
-
-        device = xm.xla_device()
-    elif is_available_gpu:
+    if is_available_gpu:
         device = "cuda"
     return torch.device(device)
 

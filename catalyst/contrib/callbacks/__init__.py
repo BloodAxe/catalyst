@@ -48,16 +48,6 @@ except UnsupportedNodeError as ex:
     if SETTINGS.kornia_required:
         raise ex
 
-try:
-    import alchemy
-    from catalyst.contrib.callbacks.alchemy_logger import AlchemyLogger
-except ImportError as ex:
-    if SETTINGS.alchemy_logger_required:
-        logger.warning(
-            "alchemy not available, to install alchemy, "
-            "run `pip install alchemy`."
-        )
-        raise ex
 
 
 try:

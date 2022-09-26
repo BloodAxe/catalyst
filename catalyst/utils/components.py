@@ -5,7 +5,6 @@ import torch
 import torch.distributed
 from torch import nn
 
-from catalyst.settings import IS_XLA_AVAILABLE
 from catalyst.typing import Criterion, Device, Model, Optimizer, Scheduler
 from catalyst.utils.distributed import (
     check_amp_available,
@@ -53,31 +52,18 @@ def process_components(
     distributed_params = copy.deepcopy(distributed_params)
     distributed_params.update(get_distributed_params())
 
-    if device is None and IS_XLA_AVAILABLE:
-        raise ValueError(
-            "TPU device is available. "
-            "Please move model, optimizer and scheduler (if present) "
-            "to TPU device manualy and specify a device or "
-            "use CPU device."
-        )
-
     if device is None:
         device = get_device()
     elif isinstance(device, str):
         device = torch.device(device)
 
-    is_apex_enabled = (
-        distributed_params.pop("apex", False) and check_apex_available()
-    )
+    is_apex_enabled = distributed_params.pop("apex", False) and check_apex_available()
 
-    is_amp_enabled = (
-        distributed_params.get("amp", False) and check_amp_available()
-    )
+    is_amp_enabled = distributed_params.get("amp", False) and check_amp_available()
 
     if is_apex_enabled and is_amp_enabled:
         raise ValueError(
-            "Both NVidia Apex and Torch.Amp are enabled. "
-            "You must choose only one mixed precision backend"
+            "Both NVidia Apex and Torch.Amp are enabled. " "You must choose only one mixed precision backend"
         )
     model: Model = maybe_recursive_call(model, "to", device=device)
 
@@ -85,9 +71,7 @@ def process_components(
         pass
     # distributed data parallel run (ddp) (with apex support)
     elif get_rank() >= 0:
-        assert isinstance(
-            model, nn.Module
-        ), "Distributed training is not available for KV model"
+        assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
 
         local_rank = distributed_params.pop("local_rank", 0) or 0
         device = f"cuda:{local_rank}"
@@ -101,17 +85,13 @@ def process_components(
             if syncbn:
                 model = apex.parallel.convert_syncbn_model(model)
 
-            model, optimizer = initialize_apex(
-                model, optimizer, **distributed_params
-            )
+            model, optimizer = initialize_apex(model, optimizer, **distributed_params)
             model = apex.parallel.DistributedDataParallel(model)
         else:
             if syncbn:
                 model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-            find_unused = distributed_params.get(
-                "find_unused_parameters", False
-            )
+            find_unused = distributed_params.get("find_unused_parameters", False)
             model = nn.parallel.DistributedDataParallel(
                 model,
                 device_ids=[local_rank],
@@ -122,25 +102,15 @@ def process_components(
     else:
         # apex issue https://github.com/deepset-ai/FARM/issues/210
         use_apex = (is_apex_enabled and torch.cuda.device_count() == 1) or (
-            is_apex_enabled
-            and torch.cuda.device_count() > 1
-            and distributed_params.get("opt_level", "O0") == "O1"
+            is_apex_enabled and torch.cuda.device_count() > 1 and distributed_params.get("opt_level", "O0") == "O1"
         )
 
         if use_apex:
-            assert isinstance(
-                model, nn.Module
-            ), "Apex training is not available for KV model"
+            assert isinstance(model, nn.Module), "Apex training is not available for KV model"
 
-            model, optimizer = initialize_apex(
-                model, optimizer, **distributed_params
-            )
+            model, optimizer = initialize_apex(model, optimizer, **distributed_params)
 
-        if (
-            torch.cuda.device_count() > 1
-            and device.type != "cpu"
-            and device.index is None
-        ):
+        if torch.cuda.device_count() > 1 and device.type != "cpu" and device.index is None:
             if isinstance(model, nn.Module):
                 model = nn.DataParallel(model)
             elif isinstance(model, dict):

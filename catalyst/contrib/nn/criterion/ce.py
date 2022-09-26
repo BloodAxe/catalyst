@@ -61,10 +61,10 @@ class SymmetricCrossEntropyLoss(nn.Module):
 
 
 class MaskCrossEntropyLoss(nn.Module):
-    """@TODO: Docs. Contribution is welcome."""
+    
 
     def __init__(self, *args, **kwargs):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
         self.ce_loss = nn.CrossEntropyLoss(*args, **kwargs, reduction="none")
 

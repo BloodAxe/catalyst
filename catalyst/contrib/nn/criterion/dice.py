@@ -9,7 +9,7 @@ from catalyst import metrics
 
 
 class DiceLoss(nn.Module):
-    """@TODO: Docs. Contribution is welcome."""
+    
 
     def __init__(
         self,
@@ -17,7 +17,7 @@ class DiceLoss(nn.Module):
         threshold: float = None,
         activation: str = "Sigmoid",
     ):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
 
         self.loss_fn = partial(

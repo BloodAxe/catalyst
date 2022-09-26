@@ -5,7 +5,7 @@ from catalyst.contrib.nn.optimizers import Lookahead
 
 
 def test_optimizer_init():
-    """@TODO: Docs. Contribution is welcome."""
+    
     model = nn.Linear(10, 10)
     for name, module_class in module.__dict__.items():
         if isinstance(module_class, type):

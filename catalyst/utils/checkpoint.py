@@ -13,7 +13,7 @@ from catalyst.utils.misc import maybe_recursive_call
 def pack_checkpoint(
     model=None, criterion=None, optimizer=None, scheduler=None, **kwargs
 ):
-    """@TODO: Docs. Contribution is welcome."""
+    
     checkpoint = kwargs
 
     if isinstance(model, OrderedDict):

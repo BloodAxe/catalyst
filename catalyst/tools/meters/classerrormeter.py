@@ -7,7 +7,7 @@ from catalyst.tools.meters import meter
 
 
 class ClassErrorMeter(meter.Meter):
-    """@TODO: Docs. Contribution is welcome."""
+    
 
     def __init__(self, topk=None, accuracy=False):
         """Constructor method for the ``AverageValueMeter`` class."""
@@ -17,12 +17,12 @@ class ClassErrorMeter(meter.Meter):
         self.reset()
 
     def reset(self) -> None:
-        """@TODO: Docs. Contribution is welcome."""
+        
         self.sum = {v: 0 for v in self.topk}
         self.n = 0
 
     def add(self, output, target) -> None:
-        """@TODO: Docs. Contribution is welcome."""
+        
         if torch.is_tensor(output):
             output = output.cpu().squeeze().numpy()
         if torch.is_tensor(target):
@@ -55,7 +55,7 @@ class ClassErrorMeter(meter.Meter):
         self.n += no
 
     def value(self, k=-1):
-        """@TODO: Docs. Contribution is welcome."""
+        
         if k != -1:
             assert (
                 k in self.sum.keys()

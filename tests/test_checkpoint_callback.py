@@ -10,7 +10,6 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-import catalyst.dl as dl
 
 
 def test_load_best_on_stage_end():

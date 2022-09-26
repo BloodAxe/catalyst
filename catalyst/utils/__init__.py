@@ -4,7 +4,6 @@ All utils are gathered in :py:mod:`catalyst.utils` for easier access.
 """
 
 
-from catalyst.settings import IS_PRUNING_AVAILABLE
 from catalyst.utils.checkpoint import (
     load_checkpoint,
     pack_checkpoint,
@@ -106,16 +105,11 @@ from catalyst.utils.tracing import (
     load_traced_model,
 )
 
-if IS_PRUNING_AVAILABLE:
-    from catalyst.utils.pruning import prune_model, remove_reparametrization
-
-from catalyst.settings import IS_QUANTIZATION_AVAILABLE
-
-if IS_QUANTIZATION_AVAILABLE:
-    from catalyst.utils.quantization import (
-        save_quantized_model,
-        quantize_model_from_checkpoint,
-    )
+from catalyst.utils.pruning import prune_model, remove_reparametrization
+from catalyst.utils.quantization import (
+    save_quantized_model,
+    quantize_model_from_checkpoint,
+)
 
 from catalyst.settings import IS_GIT_AVAILABLE
 

@@ -90,10 +90,10 @@ class GlobalConcatPool2d(nn.Module):
 
 
 class GlobalAttnPool2d(nn.Module):
-    """@TODO: Docs. Contribution is welcome."""
+    
 
     def __init__(self, in_features, activation_fn="Sigmoid"):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
 
         activation_fn = MODULE.get_if_str(activation_fn)
@@ -128,7 +128,7 @@ class GlobalAvgAttnPool2d(nn.Module):
     """@TODO: Docs (add `Example`). Contribution is welcome."""
 
     def __init__(self, in_features, activation_fn="Sigmoid"):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
         self.avg = GlobalAvgPool2d()
         self.attn = GlobalAttnPool2d(in_features, activation_fn)
@@ -154,7 +154,7 @@ class GlobalMaxAttnPool2d(nn.Module):
     """@TODO: Docs (add `Example`). Contribution is welcome."""
 
     def __init__(self, in_features, activation_fn="Sigmoid"):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
         self.max = GlobalMaxPool2d()  # noqa: WPS125
         self.attn = GlobalAttnPool2d(in_features, activation_fn)
@@ -180,7 +180,7 @@ class GlobalConcatAttnPool2d(nn.Module):
     """@TODO: Docs (add `Example`). Contribution is welcome."""
 
     def __init__(self, in_features, activation_fn="Sigmoid"):
-        """@TODO: Docs. Contribution is welcome."""
+        
         super().__init__()
         self.avg = GlobalAvgPool2d()
         self.max = GlobalMaxPool2d()  # noqa: WPS125

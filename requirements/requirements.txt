@@ -1,7 +1,9 @@
 # Framework must-haves
-numpy>=1.16.4
-torch>=1.10.0
-tqdm>=4.33.0
+torch>=1.12.0
+hydra-core>=1.2
+
+numpy
+tqdm
 PyYAML
 
 # packaging
@@ -12,4 +14,3 @@ deprecation
 matplotlib
 scikit-learn>=0.20
 GitPython>=3.1.1
-hydra-core==1.2

@@ -12,7 +12,7 @@ from catalyst.data import AllTripletsSampler
 
 
 def test_criterion_init():
-    """@TODO: Docs. Contribution is welcome."""
+    
     for module_class in module.__dict__.values():
         if isinstance(module_class, type):
             if module_class == CircleLoss:
