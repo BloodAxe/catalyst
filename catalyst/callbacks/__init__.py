@@ -48,3 +48,4 @@ from catalyst.callbacks.validation import ValidationManagerCallback
 
 from catalyst.callbacks.quantization import DynamicQuantizationCallback
 from catalyst.callbacks.pruning import PruningCallback
+from catalyst.callbacks.ema import EMABatchCallback, EMAEpochCallback

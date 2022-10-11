@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING
+from collections import defaultdict
+from typing import TYPE_CHECKING, Union, Iterable
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 
@@ -83,7 +84,7 @@ class EarlyStoppingCallback(Callback):
     def __init__(
         self,
         patience: int,
-        metric: str = "loss",
+        metrics: Union[str, Iterable[str]] = "loss",
         minimize: bool = True,
         min_delta: float = 1e-6,
     ):
@@ -103,8 +104,8 @@ class EarlyStoppingCallback(Callback):
                 default value is ``1e-6``.
         """
         super().__init__(order=CallbackOrder.external, node=CallbackNode.all)
-        self.best_score = None
-        self.metric = metric
+        self.best_score = defaultdict(lambda: None)
+        self.metrics = [metrics] if isinstance(metrics, str) else list(metrics)
         self.patience = patience
         self.num_bad_epochs = 0
         self.is_better = None
@@ -123,10 +124,16 @@ class EarlyStoppingCallback(Callback):
         if runner.stage_name.startswith("infer"):
             return
 
-        score = runner.valid_metrics[self.metric]
-        if self.best_score is None or self.is_better(score, self.best_score):
+        some_metric_has_improved = False
+
+        for metric_name in self.metrics:
+            score = runner.valid_metrics[metric_name]
+            if self.best_score[metric_name] is None or self.is_better(score, self.best_score[metric_name]):
+                self.best_score[metric_name] = float(score)
+                some_metric_has_improved = True
+
+        if some_metric_has_improved:
             self.num_bad_epochs = 0
-            self.best_score = score
         else:
             self.num_bad_epochs += 1
 
