@@ -1,8 +1,7 @@
 import logging
 import warnings
-from typing import Callable, Dict, List, TYPE_CHECKING, Mapping
+from typing import Callable, Dict, TYPE_CHECKING, Mapping
 
-import hydra.utils
 import torch
 from torch import nn
 from torch.distributed.optim import ZeroRedundancyOptimizer
@@ -10,7 +9,7 @@ from torch.distributed.optim import ZeroRedundancyOptimizer
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
 from catalyst.utils.misc import maybe_recursive_call
-from catalyst.utils.torch import get_optimizer_momentum
+from catalyst.utils.torch import get_param_group_momentum
 
 if TYPE_CHECKING:
     from catalyst.core.runner import IRunner
@@ -210,7 +209,7 @@ class OptimizerCallback(IOptimizerCallback):
         lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
 
-        momentum = get_optimizer_momentum(self._optimizer)
+        momentum = get_param_group_momentum(self._optimizer)
         if momentum is not None:
             momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
             runner.epoch_metrics[momentum_name] = momentum
@@ -366,7 +365,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
         runner.epoch_metrics[lr_name] = lr
 
-        momentum = get_optimizer_momentum(self._optimizer)
+        momentum = get_param_group_momentum(self._optimizer)
         if momentum is not None:
             momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
             runner.epoch_metrics[momentum_name] = momentum
@@ -380,8 +379,43 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.scaler = None
 
 
-__all__ = [
-    "IOptimizerCallback",
-    "AMPOptimizerCallback",
-    "OptimizerCallback",
-]
+class OptimizerLoggerCallback(Callback):
+    """
+    Optimizer callback with native torch amp support.
+    """
+
+    def __init__(
+        self,
+        optimizer_key: str = None,
+    ):
+        """
+        Args:
+            optimizer_key: A key to take an optimizer in case
+                there are several of them, and they are in a dictionary format.
+        """
+        super().__init__(order=CallbackOrder.optimizer + 1, node=CallbackNode.all)
+        self.optimizer_key = optimizer_key
+
+    def on_batch_end(self, runner: "IRunner") -> None:
+        """On batch end event
+
+        Args:
+            runner: current runner
+        """
+        _optimizer: torch.optim.Optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
+
+        prefix = "_optimizer"
+        if self.optimizer_key is not None:
+            prefix = f"{prefix}/{self.optimizer_key}"
+
+        for pg_index, pg in enumerate(_optimizer.param_groups):
+            pg_name = pg["name"] if "name" in pg else str(pg_index)
+            learning_rate = pg["lr"]
+            runner.batch_metrics[f"{prefix}/{pg_name}/lr"] = learning_rate
+
+            momentum = get_param_group_momentum(pg)
+            if momentum is not None:
+                runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = momentum
+
+
+__all__ = ["IOptimizerCallback", "AMPOptimizerCallback", "OptimizerCallback", "OptimizerLoggerCallback"]

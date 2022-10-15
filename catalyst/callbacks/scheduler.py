@@ -5,7 +5,7 @@ import torch
 
 from catalyst.contrib.nn.schedulers import BatchScheduler, OneCycleLRWithWarmup
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-from catalyst.utils.torch import get_optimizer_momentum
+from catalyst.utils.torch import get_param_group_momentum
 
 if TYPE_CHECKING:
     from catalyst.core.runner import IRunner
@@ -116,7 +116,7 @@ class SchedulerCallback(ISchedulerCallback):
             scheduler.step()
 
         lr = scheduler.optimizer.param_groups[0]["lr"]
-        momentum = get_optimizer_momentum(scheduler.optimizer)
+        momentum = get_param_group_momentum(scheduler.optimizer)
 
         return lr, momentum
 
@@ -251,7 +251,7 @@ class ILRUpdater(ABC, Callback):
         if new_momentum is not None:
             self._update_momentum(optimizer, new_momentum)
         else:
-            new_momentum = get_optimizer_momentum(optimizer)
+            new_momentum = get_param_group_momentum(optimizer)
 
         return new_lr, new_momentum
 

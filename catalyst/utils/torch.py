@@ -23,7 +23,7 @@ def get_optimizable_params(model_or_params):
     return master_params
 
 
-def get_optimizer_momentum(optimizer: Optimizer) -> float:
+def get_param_group_momentum(optimizer_param_group) -> float:
     """Get momentum of current optimizer.
 
     Args:
@@ -32,27 +32,10 @@ def get_optimizer_momentum(optimizer: Optimizer) -> float:
     Returns:
         float: momentum at first param group
     """
-    betas = optimizer.param_groups[0].get("betas", None)
-    momentum = optimizer.param_groups[0].get("momentum", None)
+    betas = optimizer_param_group.get("betas", None)
+    momentum = optimizer_param_group.get("momentum", None)
     return betas[0] if betas is not None else momentum
 
-
-def set_optimizer_momentum(optimizer: Optimizer, value: float, index: int = 0):
-    """Set momentum of ``index`` 'th param group of optimizer to ``value``.
-
-    Args:
-        optimizer: PyTorch optimizer
-        value: new value of momentum
-        index (int, optional): integer index of optimizer's param groups,
-            default is 0
-    """
-    betas = optimizer.param_groups[0].get("betas", None)
-    momentum = optimizer.param_groups[0].get("momentum", None)
-    if betas is not None:
-        _, beta = betas
-        optimizer.param_groups[index]["betas"] = (value, beta)
-    elif momentum is not None:
-        optimizer.param_groups[index]["momentum"] = value
 
 
 def get_device() -> torch.device:
@@ -356,8 +339,7 @@ def normalize(samples: Tensor) -> Tensor:
 
 __all__ = [
     "get_optimizable_params",
-    "get_optimizer_momentum",
-    "set_optimizer_momentum",
+    "get_param_group_momentum",
     "get_device",
     "get_available_gpus",
     "get_activation_fn",

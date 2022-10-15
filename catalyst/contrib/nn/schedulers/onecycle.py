@@ -4,7 +4,7 @@ import numpy as np
 from torch.optim import Optimizer
 
 from catalyst.contrib.nn.schedulers.base import BatchScheduler
-from catalyst.utils.torch import get_optimizer_momentum
+from catalyst.utils.torch import get_param_group_momentum
 
 
 class OneCycleLRWithWarmup(BatchScheduler):
@@ -67,7 +67,7 @@ class OneCycleLRWithWarmup(BatchScheduler):
         if init_lr is None:
             init_lr = optimizer.defaults["lr"]
         if init_momentum is None:
-            init_momentum = get_optimizer_momentum(optimizer)
+            init_momentum = get_param_group_momentum(optimizer)
 
         warmup_steps = self._calculate_warmup(
             num_steps, warmup_steps, warmup_fraction
