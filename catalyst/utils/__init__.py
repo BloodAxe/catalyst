@@ -49,8 +49,6 @@ from catalyst.utils.misc import (
     fn_ends_with_pass,
 )
 from catalyst.utils.misc import find_value_ids
-from catalyst.utils.numpy import get_one_hot
-from catalyst.utils.parser import parse_config_args, parse_args_uargs
 from catalyst.utils.scripts import (
     import_module,
     dump_code,

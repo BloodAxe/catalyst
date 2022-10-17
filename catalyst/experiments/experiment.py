@@ -34,7 +34,7 @@ from catalyst.settings import SETTINGS
 from catalyst.typing import Criterion, Model, Optimizer, Scheduler
 
 
-    from catalyst.core.callback import Callback
+from catalyst.core.callback import Callback
 
 
 class Experiment(IExperiment):
