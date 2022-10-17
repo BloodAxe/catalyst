@@ -5,8 +5,8 @@ import torch
 
 from catalyst.callbacks.criterion import CriterionCallback
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class CutmixCallback(CriterionCallback):

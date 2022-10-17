@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 
 from catalyst.core.callback import Callback, CallbackOrder
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class PeriodicLoaderCallback(Callback):

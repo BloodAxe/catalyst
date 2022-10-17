@@ -1,13 +1,13 @@
 from collections import OrderedDict
-from typing import Callable, Mapping, Sequence, TYPE_CHECKING, Union
+from typing import Callable, Mapping, Sequence, Union
 
 from catalyst.core.callback import Callback, CallbackWrapper
 
 LOADERS = Union[str, Sequence[str], Mapping[str, Union[int, Sequence[int]]]]
 FILTER_FN = Callable[[str, int, str], bool]
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 def _filter_fn_from_epochs(epochs: Union[int, float, Sequence[int]], reverse_condition: bool) -> FILTER_FN:

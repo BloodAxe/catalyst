@@ -12,8 +12,8 @@ from sklearn.metrics import confusion_matrix as confusion_matrix_fn
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.tools.meters.confusionmeter import ConfusionMeter
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class ConfusionMatrixCallback(Callback):

@@ -1,15 +1,16 @@
 import logging
 import warnings
-from typing import Callable, Dict, TYPE_CHECKING, Mapping
-
 import torch
+
+from typing import Callable, Dict, Mapping
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
 from torch import nn
 from torch.distributed.optim import ZeroRedundancyOptimizer
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
+from catalyst.utils import get_param_group_momentum
 
 logger = logging.getLogger(__name__)
 

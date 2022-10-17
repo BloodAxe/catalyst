@@ -2,7 +2,7 @@ import math
 import os
 from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Callable, Dict, Tuple, Union
 
 import torch
 
@@ -15,8 +15,8 @@ from catalyst.utils.checkpoint import (
 )
 from catalyst.utils.misc import is_exception
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 def _pack_runner(runner: "IRunner"):

@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.tools.time_manager import TimeManager
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class TimerCallback(Callback):

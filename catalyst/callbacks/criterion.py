@@ -1,9 +1,9 @@
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import Dict, List, Union
 
 from catalyst.callbacks.metric import IBatchMetricCallback
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class CriterionCallback(IBatchMetricCallback):

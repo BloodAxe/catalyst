@@ -9,11 +9,10 @@ import torch.nn.functional as F
 from torch import Tensor
 from catalyst.core import Callback, CallbackOrder, IRunner, CallbackNode
 from catalyst.callbacks import TensorboardLogger
-from pytorch_toolbelt.utils import render_figure_to_tensor
+from pytorch_toolbelt.utils import render_figure_to_tensor, image_to_tensor, to_numpy, rgb_image_from_tensor
 from pytorch_toolbelt.utils.distributed import all_gather
 from torch.utils.tensorboard import SummaryWriter
 
-from ..torch_utils import rgb_image_from_tensor, to_numpy, image_to_tensor
 
 __all__ = [
     "get_tensorboard_logger",
@@ -54,7 +53,7 @@ class ShowPolarBatchesCallback(Callback):
         :param min_delta:
         :param targets: Str 'tensorboard' or 'matplotlib, or ['tensorboard', 'matplotlib']
         """
-        super().__init__(CallbackOrder.Logging)
+        super().__init__(CallbackOrder.Logging, node=CallbackNode.Master)
         assert isinstance(targets, (list, str))
 
         self.best_score = None

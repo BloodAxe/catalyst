@@ -4,8 +4,8 @@ import optuna
 
 from catalyst.core.callback import Callback, CallbackOrder
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class OptunaPruningCallback(Callback):

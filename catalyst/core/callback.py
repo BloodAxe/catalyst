@@ -1,8 +1,8 @@
 from enum import IntFlag
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class CallbackNode(IntFlag):

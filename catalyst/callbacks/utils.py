@@ -1,6 +1,6 @@
 from typing import Dict, Union
 import torch
-from catalyst.core import IRunner, Callback, CallbackOrder
+from catalyst.core import IRunner, Callback, CallbackOrder, CallbackNode
 from typing import Dict, Union
 
 import torch
@@ -20,7 +20,7 @@ from pytorch_toolbelt.utils.catalyst import get_tensorboard_logger
 
 class HyperParametersCallback(Callback):
     """
-    Callback that logs hyper-parameters for training session and target metric value.
+    Callback that logs hyperparameters for training session and target metric value.
     Useful for evaluation of several runs in Tensorboard.
     """
 
@@ -31,7 +31,7 @@ class HyperParametersCallback(Callback):
             if not isinstance(value, (str, float, int, bool)):
                 raise ValueError(f"Value of key {key} must be either str,float,int,bool. Got {value}")
 
-        super().__init__(CallbackOrder.Metric)
+        super().__init__(CallbackOrder.Metric, node=CallbackNode.Master)
         self.hparam_dict = hparam_dict
 
     def on_stage_end(self, state: IRunner):

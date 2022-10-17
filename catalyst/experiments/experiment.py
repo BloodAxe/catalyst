@@ -33,7 +33,7 @@ from catalyst.core.functional import (
 from catalyst.settings import SETTINGS
 from catalyst.typing import Criterion, Model, Optimizer, Scheduler
 
-if TYPE_CHECKING:
+
     from catalyst.core.callback import Callback
 
 

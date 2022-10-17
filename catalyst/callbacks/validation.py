@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class ValidationManagerCallback(Callback):

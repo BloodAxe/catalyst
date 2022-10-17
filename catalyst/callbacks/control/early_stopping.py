@@ -1,10 +1,10 @@
 from collections import defaultdict
-from typing import TYPE_CHECKING, Union, Iterable
+from typing import Union, Iterable
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class EarlyStoppingCallback(Callback):

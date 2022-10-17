@@ -1,12 +1,12 @@
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Sequence, Tuple, Union
 
 import torch
 from torch import nn
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 
 class BatchTransformCallback(Callback):

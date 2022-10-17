@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict, Mapping, Iterable
-from typing import Any, Callable, Dict, List, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, List, Union
 
 import numpy as np
 import torch
@@ -11,8 +11,8 @@ from catalyst.tools.meters.averagevaluemeter import AverageValueMeter
 from catalyst.utils.dict import get_dictkey_auto_fn
 from catalyst.utils.distributed import get_distributed_mean
 
-if TYPE_CHECKING:
-    from catalyst.core.runner import IRunner
+
+from catalyst.core.runner import IRunner
 
 logger = logging.getLogger(__name__)
 
