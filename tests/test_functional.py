@@ -33,7 +33,13 @@ from catalyst.metrics.functional import (
     ],
 )
 def test_get_binary_statistics(
-    outputs, targets, tn_true, fp_true, fn_true, tp_true, support_true,
+    outputs,
+    targets,
+    tn_true,
+    fp_true,
+    fn_true,
+    tp_true,
+    support_true,
 ):
     tn, fp, fn, tp, support = get_binary_statistics(outputs, targets)
 
@@ -94,7 +100,13 @@ def test_get_binary_statistics(
     ],
 )
 def test_get_multiclass_statistics(
-    outputs, targets, tn_true, fp_true, fn_true, tp_true, support_true,
+    outputs,
+    targets,
+    tn_true,
+    fp_true,
+    fn_true,
+    tp_true,
+    support_true,
 ):
     tn, fp, fn, tp, support = get_multiclass_statistics(outputs, targets)
 
@@ -146,7 +158,13 @@ def test_get_multiclass_statistics(
     ],
 )
 def test_get_multilabel_statistics(
-    outputs, targets, tn_true, fp_true, fn_true, tp_true, support_true,
+    outputs,
+    targets,
+    tn_true,
+    fp_true,
+    fn_true,
+    tp_true,
+    support_true,
 ):
     tn, fp, fn, tp, support = get_multilabel_statistics(outputs, targets)
 

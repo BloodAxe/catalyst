@@ -86,7 +86,10 @@ class SchedulerCallback(ISchedulerCallback):
     """
 
     def __init__(
-        self, scheduler_key: str = None, mode: str = None, reduced_metric: str = None,
+        self,
+        scheduler_key: str = None,
+        mode: str = None,
+        reduced_metric: str = None,
     ):
         """
         Args:
@@ -108,7 +111,8 @@ class SchedulerCallback(ISchedulerCallback):
 
     @staticmethod
     def _scheduler_step(
-        scheduler, reduced_metric=None,
+        scheduler,
+        reduced_metric=None,
     ):
         if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
             scheduler.step(reduced_metric)
@@ -315,7 +319,11 @@ class LRFinder(ILRUpdater):
     """
 
     def __init__(
-        self, final_lr, scale: str = "log", num_steps: Optional[int] = None, optimizer_key: str = None,
+        self,
+        final_lr,
+        scale: str = "log",
+        num_steps: Optional[int] = None,
+        optimizer_key: str = None,
     ):
         """
         Args:
@@ -344,7 +352,7 @@ class LRFinder(ILRUpdater):
             raise Exception("Not supported")
 
     def _calc_lr_log(self):
-        return self.init_lr * self.multiplier ** self.find_iter
+        return self.init_lr * self.multiplier**self.find_iter
 
     def _calc_lr_linear(self):
         return self.init_lr + self.lr_step * self.find_iter

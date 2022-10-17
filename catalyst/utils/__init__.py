@@ -11,7 +11,6 @@ from catalyst.utils.checkpoint import (
     unpack_checkpoint,
 )
 from catalyst.utils.components import process_components
-from catalyst.utils.config import load_config, save_config
 from catalyst.utils.dict import (
     get_key_str,
     get_key_none,
@@ -25,7 +24,6 @@ from catalyst.utils.dict import (
 )
 from catalyst.utils.distributed import (
     get_nn_from_ddp_module,
-    get_slurm_params,
     get_distributed_params,
     get_distributed_env,
     get_rank,
@@ -33,16 +31,7 @@ from catalyst.utils.distributed import (
     check_ddp_wrapped,
     check_torch_distributed_initialized,
     check_slurm_available,
-    check_apex_available,
     check_amp_available,
-    initialize_apex,
-    assert_fp16_available,
-)
-from catalyst.utils.hash import get_hash, get_short_hash
-from catalyst.utils.initialization import (
-    get_optimal_inner_init,
-    outer_init,
-    reset_weights_if_possible,
 )
 from catalyst.utils.loaders import (
     validate_loaders,
@@ -96,22 +85,3 @@ from catalyst.utils.torch import (
     detach,
     trim_tensors,
 )
-from catalyst.utils.tracing import (
-    trace_model,
-    trace_model_from_checkpoint,
-    trace_model_from_runner,
-    get_trace_name,
-    save_traced_model,
-    load_traced_model,
-)
-
-from catalyst.utils.pruning import prune_model, remove_reparametrization
-from catalyst.utils.quantization import (
-    save_quantized_model,
-    quantize_model_from_checkpoint,
-)
-
-from catalyst.settings import IS_GIT_AVAILABLE
-
-if IS_GIT_AVAILABLE:
-    from catalyst.utils.pipelines import clone_pipeline

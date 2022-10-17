@@ -21,31 +21,20 @@ class BalanceClassSampler(Sampler):
             Must be one of [downsampling, upsampling]
     """
 
-    def __init__(
-        self, labels: List[int], mode: Union[str, int] = "downsampling"
-    ):
+    def __init__(self, labels: List[int], mode: Union[str, int] = "downsampling"):
         """Sampler initialisation."""
         super().__init__(labels)
 
         labels = np.array(labels)
-        samples_per_class = {
-            label: (labels == label).sum() for label in set(labels)
-        }
+        samples_per_class = {label: (labels == label).sum() for label in set(labels)}
 
-        self.lbl2idx = {
-            label: np.arange(len(labels))[labels == label].tolist()
-            for label in set(labels)
-        }
+        self.lbl2idx = {label: np.arange(len(labels))[labels == label].tolist() for label in set(labels)}
 
         if isinstance(mode, str):
             assert mode in ["downsampling", "upsampling"]
 
         if isinstance(mode, int) or mode == "upsampling":
-            samples_per_class = (
-                mode
-                if isinstance(mode, int)
-                else max(samples_per_class.values())
-            )
+            samples_per_class = mode if isinstance(mode, int) else max(samples_per_class.values())
         else:
             samples_per_class = min(samples_per_class.values())
 
@@ -61,9 +50,7 @@ class BalanceClassSampler(Sampler):
         indices = []
         for key in sorted(self.lbl2idx):
             replace_flag = self.samples_per_class > len(self.lbl2idx[key])
-            indices += np.random.choice(
-                self.lbl2idx[key], self.samples_per_class, replace=replace_flag
-            ).tolist()
+            indices += np.random.choice(self.lbl2idx[key], self.samples_per_class, replace=replace_flag).tolist()
         assert len(indices) == self.length
         np.random.shuffle(indices)
 
@@ -125,9 +112,7 @@ class BalanceBatchSampler(Sampler):
 
         assert isinstance(p, int) and isinstance(k, int)
         assert (1 < p <= len(classes)) and (1 < k)
-        assert all(
-            n > 1 for n in Counter(labels).values()
-        ), "Each class shoud contain at least 2 instances to fit (1)"
+        assert all(n > 1 for n in Counter(labels).values()), "Each class shoud contain at least 2 instances to fit (1)"
 
         self._labels = labels
         self._p = p
@@ -180,9 +165,9 @@ class BalanceBatchSampler(Sampler):
             num_samples_exists = len(all_cls_inds)
 
             if num_samples_exists < self._k:
-                selected_inds = sample(
-                    all_cls_inds, k=num_samples_exists
-                ) + choices(all_cls_inds, k=self._k - num_samples_exists)
+                selected_inds = sample(all_cls_inds, k=num_samples_exists) + choices(
+                    all_cls_inds, k=self._k - num_samples_exists
+                )
             else:
                 selected_inds = sample(all_cls_inds, k=self._k)
 
@@ -243,24 +228,17 @@ class MiniEpochSampler(Sampler):
         self.end_pointer = max(self.data_len, self.mini_epoch_len)
 
         if not (shuffle is None or shuffle in ["per_mini_epoch", "per_epoch"]):
-            raise ValueError(
-                "Shuffle must be one of ['per_mini_epoch', 'per_epoch']. "
-                + f"Got {shuffle}"
-            )
+            raise ValueError("Shuffle must be one of ['per_mini_epoch', 'per_epoch']. " + f"Got {shuffle}")
         self.shuffle_type = shuffle
 
     def shuffle(self) -> None:
         """Shuffle sampler indices."""
-        if self.shuffle_type == "per_mini_epoch" or (
-            self.shuffle_type == "per_epoch" and self.state_i == 0
-        ):
+        if self.shuffle_type == "per_mini_epoch" or (self.shuffle_type == "per_epoch" and self.state_i == 0):
             if self.data_len >= self.mini_epoch_len:
                 self.indices = self._indices
                 np.random.shuffle(self.indices)
             else:
-                self.indices = np.random.choice(
-                    self._indices, self.mini_epoch_len, replace=True
-                )
+                self.indices = np.random.choice(self._indices, self.mini_epoch_len, replace=True)
 
     def __iter__(self) -> Iterator[int]:
         """Iterate over sampler.
@@ -272,11 +250,7 @@ class MiniEpochSampler(Sampler):
         self.shuffle()
 
         start = self.state_i * self.mini_epoch_len
-        stop = (
-            self.end_pointer
-            if (self.state_i == self.steps)
-            else (self.state_i + 1) * self.mini_epoch_len
-        )
+        stop = self.end_pointer if (self.state_i == self.steps) else (self.state_i + 1) * self.mini_epoch_len
         indices = self.indices[start:stop].tolist()
 
         self.state_i += 1
@@ -363,9 +337,9 @@ class DynamicLenBatchSampler(BatchSampler):
             yielded += 1
             yield batch
 
-        assert len(self) == yielded, (
-            "produced an inccorect number of batches. "
-            + "expected %i, but yielded %i" % (len(self), yielded)
+        assert len(self) == yielded, "produced an inccorect number of batches. " + "expected %i, but yielded %i" % (
+            len(self),
+            yielded,
         )
 
 
@@ -411,7 +385,7 @@ class DistributedSamplerWrapper(DistributedSampler):
         self.sampler = sampler
 
     def __iter__(self):
-        
+
         self.dataset = DatasetFromSampler(self.sampler)
         indexes_of_indexes = super().__iter__()
         subsampler_indexes = self.dataset

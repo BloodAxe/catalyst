@@ -38,9 +38,7 @@ def _pack_runner(runner: "IRunner"):
     return checkpoint
 
 
-def _load_checkpoint(
-    *, filename, runner: "IRunner", load_full: bool = True
-) -> None:
+def _load_checkpoint(*, filename, runner: "IRunner", load_full: bool = True) -> None:
     """
     Load checkpoint from a file.
 
@@ -90,7 +88,8 @@ def _load_checkpoint(
         )
     else:
         unpack_checkpoint(
-            checkpoint, model=runner.model,
+            checkpoint,
+            model=runner.model,
         )
 
         print(f"loaded model checkpoint {filename}")
@@ -121,9 +120,7 @@ def _required_files(logdir: str, load_map: Dict[str, str]) -> Dict[str, str]:
     experiment_parts = ["model"] + required_full_checkpoint
 
     # keep required parts
-    experiment_parts = list(
-        filter(lambda part: part in load_map, experiment_parts)
-    )
+    experiment_parts = list(filter(lambda part: part in load_map, experiment_parts))
 
     # avoid unnecessary loading
     if "model" in experiment_parts and len(experiment_parts) > 1:
@@ -144,9 +141,7 @@ def _required_files(logdir: str, load_map: Dict[str, str]) -> Dict[str, str]:
     return required_files
 
 
-def _load_states_from_file_map(
-    *, runner: "IRunner", load_map: Dict[str, str]
-) -> None:
+def _load_states_from_file_map(*, runner: "IRunner", load_map: Dict[str, str]) -> None:
     """
     Load state of a model, criterion, optimizer, scheduler
     from files specified in ``load_map``.
@@ -199,9 +194,7 @@ class BaseCheckpointCallback(ICheckpointCallback):
             metrics_filename: filename to save metrics
                 in checkpoint folder. Must ends on ``.json`` or ``.yml``
         """
-        super().__init__(
-            order=CallbackOrder.external, node=CallbackNode.master
-        )
+        super().__init__(order=CallbackOrder.external, node=CallbackNode.master)
         self.metrics_filename = metrics_filename
         self.metrics: dict = {}
 
@@ -391,12 +384,10 @@ class CheckpointCallback(BaseCheckpointCallback):
             OrderedDict: processed metrics
         """
         top_best_checkpoints = [
-            (Path(filepath).stem, valid_metric)
-            for (filepath, _, valid_metric) in self.top_best_metrics
+            (Path(filepath).stem, valid_metric) for (filepath, _, valid_metric) in self.top_best_metrics
         ]
         all_epochs_metrics = [
-            (f"epoch_{order_index}", valid_metric)
-            for (order_index, valid_metric) in enumerate(self.metrics_history)
+            (f"epoch_{order_index}", valid_metric) for (order_index, valid_metric) in enumerate(self.metrics_history)
         ]
         metrics = []
         if self.save_n_best > 0:
@@ -428,9 +419,7 @@ class CheckpointCallback(BaseCheckpointCallback):
         if len(self.top_best_metrics) > self.save_n_best:
             last_item = self.top_best_metrics.pop(-1)
             last_filepath = Path(last_item[0])
-            last_filepaths = last_filepath.parent.glob(
-                last_filepath.name.replace(".pth", "*")
-            )
+            last_filepaths = last_filepath.parent.glob(last_filepath.name.replace(".pth", "*"))
             for filepath in last_filepaths:
                 os.remove(filepath)
 
@@ -467,11 +456,7 @@ class CheckpointCallback(BaseCheckpointCallback):
         )
         exclude = ["criterion", "optimizer", "scheduler"]
         checkpoint_path = save_checkpoint(
-            checkpoint={
-                key: value
-                for key, value in checkpoint.items()
-                if all(z not in key for z in exclude)
-            },
+            checkpoint={key: value for key, value in checkpoint.items() if all(z not in key for z in exclude)},
             logdir=Path(f"{logdir}/checkpoints/"),
             suffix=suffix,
             is_best=is_best,
@@ -539,11 +524,14 @@ class CheckpointCallback(BaseCheckpointCallback):
             else:
                 checkpoint = mapping
             _load_checkpoint(
-                filename=checkpoint, runner=runner, load_full=load_full,
+                filename=checkpoint,
+                runner=runner,
+                load_full=load_full,
             )
         elif isinstance(mapping, dict):
             _load_states_from_file_map(
-                runner=runner, load_map=mapping,
+                runner=runner,
+                load_map=mapping,
             )
 
     def on_stage_start(self, runner: "IRunner") -> None:
@@ -561,6 +549,7 @@ class CheckpointCallback(BaseCheckpointCallback):
             runner: current runner
         """
         from torch import save
+
         self._save_fn = save
 
         if getattr(runner, "resume", None) is not None:
@@ -587,18 +576,12 @@ class CheckpointCallback(BaseCheckpointCallback):
             need_load_full = False
             if isinstance(self.load_on_stage_start, str):
                 checkpoint_exists = os.path.isfile(
-                    "{}/checkpoints/{}.pth".format(
-                        runner.logdir, self.load_on_stage_start
-                    )
+                    "{}/checkpoints/{}.pth".format(runner.logdir, self.load_on_stage_start)
                 )
                 need_load_full = self.load_on_stage_start.endswith("full")
             elif isinstance(self.load_on_stage_start, dict):
-                required_files = _required_files(
-                    runner.logdir, self.load_on_stage_start
-                ).keys()
-                checkpoint_exists = all(
-                    os.path.isfile(file) for file in required_files
-                )
+                required_files = _required_files(runner.logdir, self.load_on_stage_start).keys()
+                checkpoint_exists = all(os.path.isfile(file) for file in required_files)
 
             if self.load_on_stage_start is not None and checkpoint_exists:
                 self._load_runner(
@@ -614,10 +597,7 @@ class CheckpointCallback(BaseCheckpointCallback):
         Args:
             runner: current runner
         """
-        if (
-            runner.stage_name.startswith("infer")
-            or runner.is_distributed_worker
-        ):
+        if runner.stage_name.startswith("infer") or runner.is_distributed_worker:
             return
 
         if self.save_n_best > 0:
@@ -638,10 +618,7 @@ class CheckpointCallback(BaseCheckpointCallback):
         Args:
             runner: current runner
         """
-        if (
-            runner.stage_name.startswith("infer")
-            or runner.is_distributed_worker
-        ):
+        if runner.stage_name.startswith("infer") or runner.is_distributed_worker:
             return
         log_message = "Top best models:\n"
         # store latest state
@@ -657,15 +634,11 @@ class CheckpointCallback(BaseCheckpointCallback):
             metrics = self.process_metrics(checkpoint["valid_metrics"])
             self._save_metric(runner.logdir, metrics)
             main_metric_value = metrics["last"][runner.main_metric]
-            log_message += "{filepath}\t{metric:3.4f}".format(
-                filepath=filepath, metric=main_metric_value
-            )
+            log_message += "{filepath}\t{metric:3.4f}".format(filepath=filepath, metric=main_metric_value)
         else:
             log_message += "\n".join(
                 [
-                    "{filepath}\t{metric:3.4f}".format(
-                        filepath=filepath, metric=checkpoint_metric
-                    )
+                    "{filepath}\t{metric:3.4f}".format(filepath=filepath, metric=checkpoint_metric)
                     for filepath, checkpoint_metric, _ in self.top_best_metrics
                 ]
             )
@@ -677,9 +650,7 @@ class CheckpointCallback(BaseCheckpointCallback):
             and self.save_n_best > 0
         ):
             need_load_full = (
-                self.load_on_stage_end.endswith("full")
-                if isinstance(self.load_on_stage_end, str)
-                else False
+                self.load_on_stage_end.endswith("full") if isinstance(self.load_on_stage_end, str) else False
             )
             self._load_runner(
                 runner,
@@ -687,11 +658,7 @@ class CheckpointCallback(BaseCheckpointCallback):
                 load_full=need_load_full,
             )
         elif isinstance(self.load_on_stage_end, dict) and self.save_n_best > 0:
-            to_load = {
-                k: v
-                for k, v in self.load_on_stage_end.items()
-                if v not in not_required_load_states
-            }
+            to_load = {k: v for k, v in self.load_on_stage_end.items() if v not in not_required_load_states}
             self._load_runner(runner, mapping=to_load)
 
 
@@ -740,11 +707,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
         Returns:
             str: checkpoint suffix
         """
-        result = (
-            f"{checkpoint['stage_name']}."
-            f"epoch.{checkpoint['epoch']}."
-            f"iter.{self._iteration_counter}"
-        )
+        result = f"{checkpoint['stage_name']}." f"epoch.{checkpoint['epoch']}." f"iter.{self._iteration_counter}"
 
         return result
 
@@ -755,12 +718,10 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
             updated metrics
         """
         n_last_checkpoints = [
-            (Path(filepath).stem, batch_values)
-            for (filepath, batch_values) in self.last_checkpoints
+            (Path(filepath).stem, batch_values) for (filepath, batch_values) in self.last_checkpoints
         ]
         all_epochs_metrics = [
-            (f"epoch_{order_index}", valid_metric)
-            for (order_index, valid_metric) in enumerate(self.metrics_history)
+            (f"epoch_{order_index}", valid_metric) for (order_index, valid_metric) in enumerate(self.metrics_history)
         ]
 
         metrics = OrderedDict(n_last_checkpoints + all_epochs_metrics)
@@ -821,6 +782,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
             self._iteration_counter = 0
 
         from torch import save
+
         self._save_fn = save
 
     def on_batch_end(self, runner: "IRunner"):
@@ -847,9 +809,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
             runner: current runner
         """
         if self.load_on_stage_end in ["best", "best_full"]:
-            resume = (
-                f"{runner.logdir}/checkpoints/{self.load_on_stage_end}.pth"
-            )
+            resume = f"{runner.logdir}/checkpoints/{self.load_on_stage_end}.pth"
             print(f"Loading {self.load_on_stage_end} model from {resume}")
             _load_checkpoint(
                 filename=resume,

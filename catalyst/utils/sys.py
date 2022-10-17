@@ -25,10 +25,7 @@ def _decode_dict(dictionary: Dict[str, Union[bytes, str]]) -> Dict[str, str]:
     Returns:
         Dict: decoded dict
     """
-    result = {
-        k: v.decode("UTF-8") if type(v) == bytes else v
-        for k, v in dictionary.items()
-    }
+    result = {k: v.decode("UTF-8") if type(v) == bytes else v for k, v in dictionary.items()}
     return result
 
 
@@ -63,9 +60,7 @@ def get_environment_vars() -> Dict[str, Any]:
                 .strip()
                 .decode("UTF-8")
             )
-            git_local_commit = subprocess.check_output(
-                "git rev-parse HEAD".split(), shell=True, stderr=devnull
-            )
+            git_local_commit = subprocess.check_output("git rev-parse HEAD".split(), shell=True, stderr=devnull)
             git_origin_commit = subprocess.check_output(
                 f"git rev-parse origin/{git_branch}".split(),
                 shell=True,
@@ -97,11 +92,7 @@ def list_pip_packages() -> str:
     # TODO: When catching exception, e has no attribute 'output'
     with open(os.devnull, "w") as devnull:
         try:
-            result = (
-                subprocess.check_output("pip freeze".split(), stderr=devnull)
-                .strip()
-                .decode("UTF-8")
-            )
+            result = subprocess.check_output("pip freeze".split(), stderr=devnull).strip().decode("UTF-8")
         except Exception:
             warnings.warn(
                 "Failed to freeze pip packages. "
@@ -132,13 +123,7 @@ def list_conda_packages() -> str:
         # We are currently in conda virtual env
         with open(os.devnull, "w") as devnull:
             try:
-                result = (
-                    subprocess.check_output(
-                        "conda list --export".split(), stderr=devnull
-                    )
-                    .strip()
-                    .decode("UTF-8")
-                )
+                result = subprocess.check_output("conda list --export".split(), stderr=devnull).strip().decode("UTF-8")
             except Exception:
                 warnings.warn(
                     "Running from conda env, "
@@ -159,7 +144,9 @@ def list_conda_packages() -> str:
 
 
 def dump_environment(
-    experiment_config: Dict, logdir: str, configs_path: List[str] = None,
+    experiment_config: Dict,
+    logdir: str,
+    configs_path: List[str] = None,
 ) -> None:
     """
     Saves config, environment variables and package list in JSON into logdir.
@@ -170,9 +157,7 @@ def dump_environment(
         configs_path: path(s) to config
     """
     configs_path = configs_path or []
-    configs_path = [
-        Path(path) for path in configs_path if isinstance(path, str)
-    ]
+    configs_path = [Path(path) for path in configs_path if isinstance(path, str)]
     config_dir = Path(logdir) / "configs"
     config_dir.mkdir(exist_ok=True, parents=True)
 

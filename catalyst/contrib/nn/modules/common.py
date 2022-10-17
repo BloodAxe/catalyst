@@ -12,7 +12,7 @@ class Flatten(nn.Module):
     """
 
     def __init__(self):
-        
+
         super().__init__()
 
     def forward(self, x):
@@ -21,10 +21,8 @@ class Flatten(nn.Module):
 
 
 class Lambda(nn.Module):
-    
-
     def __init__(self, lambda_fn):
-        
+
         super().__init__()
         self.lambda_fn = lambda_fn
 

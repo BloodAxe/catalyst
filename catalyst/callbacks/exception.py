@@ -12,9 +12,7 @@ class ExceptionCallback(Callback):
 
     def __init__(self):
         """Initialisation for ExceptionCallback."""
-        super().__init__(
-            order=CallbackOrder.external + 1, node=CallbackNode.all
-        )
+        super().__init__(order=CallbackOrder.external + 1, node=CallbackNode.all)
 
     def on_exception(self, runner: "IRunner") -> None:
         """Exception handle hook.  # noqa: DAR401

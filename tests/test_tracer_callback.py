@@ -71,7 +71,10 @@ class _TracedNet(nn.Module):
 
     @staticmethod
     def conv2d_size_out(
-        *, size: Tuple[int], kernel_size: Tuple[int], stride: Tuple[int],
+        *,
+        size: Tuple[int],
+        kernel_size: Tuple[int],
+        stride: Tuple[int],
     ) -> Tuple[int, int]:
         """
         Computes output size for 2D convolution layer.
@@ -97,9 +100,7 @@ class _TracedNet(nn.Module):
         return h, w
 
 
-def _get_loaders(
-    *, root: str, batch_size: int = 1, num_workers: int = 1
-) -> Dict[str, DataLoader]:
+def _get_loaders(*, root: str, batch_size: int = 1, num_workers: int = 1) -> Dict[str, DataLoader]:
     """
     Function to get loaders just for testing.
 
@@ -113,18 +114,10 @@ def _get_loaders(
     """
     data_transform = ToTensor()
 
-    trainset = MNIST(
-        root=root, train=True, download=True, transform=data_transform
-    )
-    trainloader = DataLoader(
-        trainset, batch_size=batch_size, num_workers=num_workers
-    )
-    testset = MNIST(
-        root=root, train=False, download=True, transform=data_transform
-    )
-    testloader = DataLoader(
-        testset, batch_size=batch_size, num_workers=num_workers
-    )
+    trainset = MNIST(root=root, train=True, download=True, transform=data_transform)
+    trainloader = DataLoader(trainset, batch_size=batch_size, num_workers=num_workers)
+    testset = MNIST(root=root, train=False, download=True, transform=data_transform)
+    testloader = DataLoader(testset, batch_size=batch_size, num_workers=num_workers)
 
     loaders = collections.OrderedDict(train=trainloader, valid=testloader)
 
@@ -159,9 +152,7 @@ class _OnStageEndCheckModelTracedCallback(Callback):
         self.inputs = self.inputs.to(self.device)
         result = traced_model(self.inputs)
 
-        assert result is not None and isinstance(
-            result, torch.Tensor
-        ), "Traced model is not working correctly"
+        assert result is not None and isinstance(result, torch.Tensor), "Traced model is not working correctly"
 
 
 def test_tracer_callback():
@@ -205,7 +196,8 @@ def test_tracer_callback():
         opt_level=opt_level,
     )
     test_callback = _OnStageEndCheckModelTracedCallback(
-        path=tracing_path, inputs=images,
+        path=tracing_path,
+        inputs=images,
     )
 
     callbacks = collections.OrderedDict(

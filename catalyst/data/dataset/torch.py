@@ -6,7 +6,6 @@ from torch.utils.data import Dataset, Sampler
 _Path = Union[str, Path]
 
 
-
 class DatasetFromSampler(Dataset):
     """Dataset to create indexes from `Sampler`.
 

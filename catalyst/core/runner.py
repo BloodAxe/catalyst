@@ -362,7 +362,10 @@ class IRunner(ABC, FrozenClass):
     _experiment_fn: Callable = IExperiment
 
     def __init__(
-        self, model: RunnerModel = None, device: Device = None, **kwargs,
+        self,
+        model: RunnerModel = None,
+        device: Device = None,
+        **kwargs,
     ):
         """
         Args:
@@ -385,7 +388,7 @@ class IRunner(ABC, FrozenClass):
         optimizer: RunnerOptimizer = None,
         scheduler: RunnerScheduler = None,
         callbacks: Dict[str, "Callback"] = None,
-        loaders: Dict[str, "DataLoader"] = None,
+        loaders: Dict[str, DataLoader] = None,
         logdir: str = None,
         num_epochs: int = 1,
         main_metric: str = "loss",
@@ -458,9 +461,7 @@ class IRunner(ABC, FrozenClass):
         # stage info
         self.num_epochs: int = num_epochs
         self.stage_name: str = stage
-        self.is_infer_stage: bool = self.stage_name.startswith(
-            SETTINGS.stage_infer_prefix
-        )
+        self.is_infer_stage: bool = self.stage_name.startswith(SETTINGS.stage_infer_prefix)
         # epoch info
         self.epoch: int = 1
         # loader info
@@ -517,13 +518,9 @@ class IRunner(ABC, FrozenClass):
         if isinstance(value, nn.Module):
             model = value
         elif isinstance(value, dict):
-            values_are_models = all(
-                isinstance(v, nn.Module) for v in value.values()
-            )
+            values_are_models = all(isinstance(v, nn.Module) for v in value.values())
             if not values_are_models:
-                raise TypeError(
-                    "Invalid dict value type, must be `torch.nn.Module`"
-                )
+                raise TypeError("Invalid dict value type, must be `torch.nn.Module`")
 
             model = value
         elif isinstance(value, type(None)):
@@ -536,9 +533,7 @@ class IRunner(ABC, FrozenClass):
             )
 
         if model is not None and self._device is not None:
-            model: Model = maybe_recursive_call(
-                model, "to", device=self._device
-            )
+            model: Model = maybe_recursive_call(model, "to", device=self._device)
 
         self._model = model
 
@@ -565,20 +560,16 @@ class IRunner(ABC, FrozenClass):
         elif isinstance(value, type(None)):
             self._device = None
         else:
-            raise TypeError(
-                f"Invalid value type "
-                f"must be `str` or `torch.device` "
-                f"got '{type(value)}'"
-            )
+            raise TypeError(f"Invalid value type " f"must be `str` or `torch.device` " f"got '{type(value)}'")
 
         if self._model is not None:
-            self._model = maybe_recursive_call(
-                self._model, "to", device=self._device or "cpu"
-            )
+            self._model = maybe_recursive_call(self._model, "to", device=self._device or "cpu")
 
     @staticmethod
     def _get_experiment_components(
-        experiment: IExperiment, stage: str = None, device: Device = None,
+        experiment: IExperiment,
+        stage: str = None,
+        device: Device = None,
     ) -> Tuple[Model, Criterion, Optimizer, Scheduler, Device]:
         """
         Inner method for `Experiment` components preparation.
@@ -610,7 +601,8 @@ class IRunner(ABC, FrozenClass):
 
     @staticmethod
     def _get_experiment_callbacks(
-        experiment: IExperiment, stage: str,
+        experiment: IExperiment,
+        stage: str,
     ) -> Dict[str, Callback]:
         """Inner method for `Callbacks` preparation.
 
@@ -723,7 +715,9 @@ class IRunner(ABC, FrozenClass):
             getattr(callback, event)(self)
 
     def _batch2device(
-        self, batch: Mapping[str, Any], device: Device,
+        self,
+        batch: Mapping[str, Any],
+        device: Device,
     ) -> Mapping[str, Any]:
         """
         Inner method to transfer incoming data batches to Runners' device.
@@ -783,14 +777,10 @@ class IRunner(ABC, FrozenClass):
             loader: dataloader to iterate
         """
         if len(loader) == 0:
-            raise RunnerException(
-                f"DataLoader with name {self.loader_name} is empty."
-            )
+            raise RunnerException(f"DataLoader with name {self.loader_name} is empty.")
 
         self.loader_batch_size = (
-            loader.batch_sampler.batch_size
-            if loader.batch_sampler is not None
-            else loader.batch_size
+            loader.batch_sampler.batch_size if loader.batch_sampler is not None else loader.batch_size
         )
 
         self.loader_sample_step = 0
@@ -817,60 +807,51 @@ class IRunner(ABC, FrozenClass):
 
         for loader_name, loader in self.loaders.items():
             if len(loader) == 0:
-                raise RunnerException(
-                    f"DataLoader with name {loader_name} is empty."
-                )
+                raise RunnerException(f"DataLoader with name {loader_name} is empty.")
 
         self.is_infer_stage = self.stage_name.startswith("infer")
         if not self.is_infer_stage:
             assert self.valid_loader in self.loaders.keys(), (
-                f"'{self.valid_loader}' "
-                f"should be in provided loaders: {list(self.loaders.keys())}"
+                f"'{self.valid_loader}' " f"should be in provided loaders: {list(self.loaders.keys())}"
             )
         else:
             assert not any(
-                x.startswith(SETTINGS.loader_train_prefix)
-                for x in self.loaders.keys()
+                x.startswith(SETTINGS.loader_train_prefix) for x in self.loaders.keys()
             ), "for inference no train loader should be passed"
 
         for loader_name, loader in self.loaders.items():
             self.loader_name = loader_name
             self.loader_len = len(loader)
-            self.is_train_loader = loader_name.startswith(
-                SETTINGS.loader_train_prefix
-            )
-            self.is_valid_loader = loader_name.startswith(
-                SETTINGS.loader_valid_prefix
-            )
-            self.is_infer_loader = loader_name.startswith(
-                SETTINGS.loader_infer_prefix
-            )
+            self.is_train_loader = loader_name.startswith(SETTINGS.loader_train_prefix)
+            self.is_valid_loader = loader_name.startswith(SETTINGS.loader_valid_prefix)
+            self.is_infer_loader = loader_name.startswith(SETTINGS.loader_infer_prefix)
 
             maybe_recursive_call(
-                self.model, "train", mode=self.is_train_loader,
+                self.model,
+                "train",
+                mode=self.is_train_loader,
             )
 
             if isinstance(self.criterion, Mapping):
                 for _, criterion in self.criterion.items():
                     maybe_recursive_call(
-                        criterion, "train", mode=self.is_train_loader,
+                        criterion,
+                        "train",
+                        mode=self.is_train_loader,
                     )
             elif isinstance(self.criterion, nn.Module):
                 maybe_recursive_call(
-                    self.criterion, "train", mode=self.is_train_loader,
+                    self.criterion,
+                    "train",
+                    mode=self.is_train_loader,
                 )
             else:
                 raise ValueError()
 
-            if (
-                isinstance(loader.sampler, DistributedSampler)
-                and not self.is_infer_stage
-            ):
+            if isinstance(loader.sampler, DistributedSampler) and not self.is_infer_stage:
                 loader.sampler.set_epoch(self.epoch)
 
-            set_global_seed(
-                self.experiment.initial_seed + self.global_epoch + 1
-            )
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1)
             self._run_event("on_loader_start")
             with torch.set_grad_enabled(self.is_train_loader):
                 self._run_loader(loader)
@@ -890,9 +871,7 @@ class IRunner(ABC, FrozenClass):
 
         self._run_event("on_stage_start")
         while self.epoch < self.num_epochs + 1:
-            set_global_seed(
-                self.experiment.initial_seed + self.global_epoch + 1
-            )
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1)
             self._run_event("on_epoch_start")
             self._run_epoch(stage=stage, epoch=self.epoch)
             self._run_event("on_epoch_end")
@@ -932,8 +911,7 @@ class IRunner(ABC, FrozenClass):
 
             def _exception_handler_check(callbacks: Union[OrderedDict, Dict]):
                 return callbacks is not None and any(
-                    issubclass(x.__class__, ExceptionCallback)
-                    for x in callbacks.values()
+                    issubclass(x.__class__, ExceptionCallback) for x in callbacks.values()
                 )
 
             if _exception_handler_check(getattr(self, "callbacks", None)):
@@ -976,23 +954,14 @@ class IStageBasedRunner(IRunner):
             optimizer,
             scheduler,
             device,
-        ) = self._get_experiment_components(
-            experiment=self.experiment, stage=stage, device=self.device
-        )
+        ) = self._get_experiment_components(experiment=self.experiment, stage=stage, device=self.device)
 
         set_global_seed(self.experiment.initial_seed)
-        callbacks = self._get_experiment_callbacks(
-            experiment=self.experiment, stage=stage
-        )
+        callbacks = self._get_experiment_callbacks(experiment=self.experiment, stage=stage)
 
         migrating_params = dict(**self.experiment.get_stage_params(stage))
-        migrate_from_previous_stage = migrating_params.get(
-            "migrate_from_previous_stage", True
-        )
-        if (
-            migrate_from_previous_stage
-            and getattr(self, "callbacks", None) is not None
-        ):
+        migrate_from_previous_stage = migrating_params.get("migrate_from_previous_stage", True)
+        if migrate_from_previous_stage and getattr(self, "callbacks", None) is not None:
             for key, value in self.callbacks.items():
                 if value.scope == CallbackScope.experiment:
                     callbacks[key] = value
@@ -1004,9 +973,7 @@ class IStageBasedRunner(IRunner):
                 {
                     "global_epoch": getattr(self, "global_epoch", 1),
                     "global_batch_step": getattr(self, "global_batch_step", 0),
-                    "global_sample_step": getattr(
-                        self, "global_sample_step", 0
-                    ),
+                    "global_sample_step": getattr(self, "global_sample_step", 0),
                     "resume": getattr(self, "resume", None),
                 }
             )

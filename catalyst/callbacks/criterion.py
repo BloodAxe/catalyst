@@ -55,9 +55,7 @@ class CriterionCallback(IBatchMetricCallback):
         Args:
             runner: current runner
         """
-        criterion = runner.get_attr(
-            key="criterion", inner_key=self.criterion_key
-        )
+        criterion = runner.get_attr(key="criterion", inner_key=self.criterion_key)
         assert criterion is not None
         self._criterion = criterion
 

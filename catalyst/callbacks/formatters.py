@@ -52,10 +52,7 @@ class TxtMetricsFormatter(MetricsFormatter):
     def _format_metrics(self, metrics: Dict[str, Dict[str, float]]):
         metrics_formatted = {}
         for key, value in metrics.items():
-            metrics_formatted_part = [
-                format_metric(m_name, m_value)
-                for m_name, m_value in sorted(value.items())
-            ]
+            metrics_formatted_part = [format_metric(m_name, m_value) for m_name, m_value in sorted(value.items())]
             metrics_formatted_part = " | ".join(metrics_formatted_part)
             metrics_formatted[key] = metrics_formatted_part
 
@@ -70,10 +67,7 @@ class TxtMetricsFormatter(MetricsFormatter):
         )
         metrics = self._format_metrics(mode_metrics)
         for key, value in metrics.items():
-            message.append(
-                f"{runner.epoch}/{runner.num_epochs} "
-                f"* Epoch {runner.global_epoch} ({key}): {value}"
-            )
+            message.append(f"{runner.epoch}/{runner.num_epochs} " f"* Epoch {runner.global_epoch} ({key}): {value}")
         message = "\n".join(message)
         return message
 

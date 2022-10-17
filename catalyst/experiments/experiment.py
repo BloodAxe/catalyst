@@ -109,9 +109,7 @@ class Experiment(IExperiment):
                 for distributed and FP16 method
             initial_seed: experiment's initial seed value
         """
-        assert (
-            datasets is not None or loaders is not None
-        ), "Please specify the data sources"
+        assert datasets is not None or loaders is not None, "Please specify the data sources"
 
         self._model = model
         self._loaders, self._valid_loader = self._get_loaders(
@@ -207,13 +205,9 @@ class Experiment(IExperiment):
         if not stage.startswith(SETTINGS.stage_infer_prefix):  # train stage
             if len(loaders) == 1:
                 valid_loader = list(loaders.keys())[0]
-                warnings.warn(
-                    "Attention, there is only one dataloader - "
-                    + str(valid_loader)
-                )
+                warnings.warn("Attention, there is only one dataloader - " + str(valid_loader))
             assert valid_loader in loaders, (
-                "The validation loader must be present "
-                "in the loaders used during experiment."
+                "The validation loader must be present " "in the loaders used during experiment."
             )
         return loaders, valid_loader
 
@@ -248,7 +242,9 @@ class Experiment(IExperiment):
         return self._scheduler
 
     def get_loaders(
-        self, stage: str, epoch: int = None,
+        self,
+        stage: str,
+        epoch: int = None,
     ) -> "OrderedDict[str, DataLoader]":
         """Returns the loaders for a given stage."""
         return self._loaders
@@ -269,9 +265,7 @@ class Experiment(IExperiment):
 
         if not stage.startswith("infer"):
             default_callbacks.append(("_metrics", MetricManagerCallback))
-            default_callbacks.append(
-                ("_validation", ValidationManagerCallback)
-            )
+            default_callbacks.append(("_validation", ValidationManagerCallback))
             default_callbacks.append(("_console", ConsoleLogger))
             if self.logdir is not None:
                 default_callbacks.append(("_saver", CheckpointCallback))
@@ -279,10 +273,7 @@ class Experiment(IExperiment):
         default_callbacks.append(("_exception", ExceptionCallback))
 
         for callback_name, callback_fn in default_callbacks:
-            is_already_present = any(
-                check_callback_isinstance(x, callback_fn)
-                for x in callbacks.values()
-            )
+            is_already_present = any(check_callback_isinstance(x, callback_fn) for x in callbacks.values())
             if not is_already_present:
                 callbacks[callback_name] = callback_fn()
 

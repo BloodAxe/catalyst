@@ -13,4 +13,3 @@ from catalyst.core.callback import (
 )
 from catalyst.core.experiment import IExperiment
 from catalyst.core.runner import IRunner, IStageBasedRunner, RunnerException
-from catalyst.core.state import State

@@ -4,7 +4,7 @@ import numpy as np
 
 
 def set_global_seed(seed: int) -> None:
-    """Sets random seed into PyTorch, TensorFlow, Numpy and Random.
+    """Sets random seed into PyTorch, Numpy and Random.
 
     Args:
         seed: random seed

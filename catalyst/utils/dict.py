@@ -4,7 +4,8 @@ from typing import Any, Callable, Dict, List, Optional, Union, Iterable, Mapping
 
 
 def get_key_str(
-    dictionary: dict, key: Optional[Union[str, List[str]]],
+    dictionary: dict,
+    key: Optional[Union[str, List[str]]],
 ) -> Any:
     """Returns value from dict by key.
 
@@ -19,7 +20,8 @@ def get_key_str(
 
 
 def get_key_list(
-    dictionary: dict, key: Optional[Union[str, List[str]]],
+    dictionary: dict,
+    key: Optional[Union[str, List[str]]],
 ) -> Dict:
     """Returns sub-dict from dict by list of keys.
 
@@ -35,7 +37,8 @@ def get_key_list(
 
 
 def get_key_dict(
-    dictionary: dict, key: Optional[Union[str, List[str]]],
+    dictionary: dict,
+    key: Optional[Union[str, List[str]]],
 ) -> Dict:
     """Returns sub-dict from dict by dict-mapping of keys.
 
@@ -51,7 +54,8 @@ def get_key_dict(
 
 
 def get_key_none(
-    dictionary: dict, key: Optional[Union[str, List[str]]],
+    dictionary: dict,
+    key: Optional[Union[str, List[str]]],
 ) -> Dict:
     """Returns empty dict.
 
@@ -66,7 +70,8 @@ def get_key_none(
 
 
 def get_key_all(
-    dictionary: dict, key: Optional[Union[str, List[str]]],
+    dictionary: dict,
+    key: Optional[Union[str, List[str]]],
 ) -> Dict:
     """Returns whole dict.
 
@@ -128,11 +133,7 @@ def merge_dicts(*dicts: dict) -> dict:
     for merge_dict in dicts[1:]:
         merge_dict = merge_dict or {}
         for k in merge_dict:
-            if (
-                k in dict_
-                and isinstance(dict_[k], dict)
-                and isinstance(merge_dict[k], collections.Mapping)
-            ):
+            if k in dict_ and isinstance(dict_[k], dict) and isinstance(merge_dict[k], collections.Mapping):
                 dict_[k] = merge_dicts(dict_[k], merge_dict[k])
             else:
                 dict_[k] = merge_dict[k]
@@ -140,9 +141,7 @@ def merge_dicts(*dicts: dict) -> dict:
     return dict_
 
 
-def flatten_dict(
-    dictionary: Dict[str, Any], parent_key: str = "", separator: str = "/"
-) -> "collections.OrderedDict":
+def flatten_dict(dictionary: Dict[str, Any], parent_key: str = "", separator: str = "/") -> "collections.OrderedDict":
     """Make the given dictionary flatten.
 
     Args:
@@ -159,30 +158,20 @@ def flatten_dict(
     for key, value in dictionary.items():
         new_key = parent_key + separator + key if parent_key else key
         if isinstance(value, collections.MutableMapping):
-            items.extend(
-                flatten_dict(value, new_key, separator=separator).items()
-            )
+            items.extend(flatten_dict(value, new_key, separator=separator).items())
         else:
             items.append((new_key, value))
     return collections.OrderedDict(items)
 
 
 def split_dict_to_subdicts(dct: Dict, prefixes: List, extra_key: str):
-    
+
     subdicts = {}
-    extra_subdict = {
-        k: v
-        for k, v in dct.items()
-        if all(not k.startswith(prefix) for prefix in prefixes)
-    }
+    extra_subdict = {k: v for k, v in dct.items() if all(not k.startswith(prefix) for prefix in prefixes)}
     if len(extra_subdict) > 0:
         subdicts[extra_key] = extra_subdict
     for prefix in prefixes:
-        subdicts[prefix] = {
-            k.replace(f"{prefix}_", ""): v
-            for k, v in dct.items()
-            if k.startswith(prefix)
-        }
+        subdicts[prefix] = {k.replace(f"{prefix}_", ""): v for k, v in dct.items() if k.startswith(prefix)}
     return subdicts
 
 

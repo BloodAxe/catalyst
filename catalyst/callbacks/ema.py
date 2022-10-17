@@ -1,15 +1,15 @@
 import torch
+from torch import Tensor
 from catalyst.core import IRunner, Callback, CallbackOrder
 
 __all__ = ["ExponentialMovingAverage", "EMABatchCallback", "EMAEpochCallback"]
 
-from torch import Tensor
 
-
-# Partially based on: https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/python/training/moving_averages.py
 class ExponentialMovingAverage:
     """
     Maintains (exponential) moving average of a set of parameters.
+
+    Partially based on: https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/python/training/moving_averages.py
     """
 
     def __init__(self, parameters, decay, use_num_updates=True):
@@ -47,9 +47,7 @@ class ExponentialMovingAverage:
             s_param.copy_(self.exponential_moving_average(s_param, param, decay))
 
     @classmethod
-    def exponential_moving_average(
-        cls, averaged_weights: Tensor, current_weights: Tensor, decay: float
-    ) -> Tensor:
+    def exponential_moving_average(cls, averaged_weights: Tensor, current_weights: Tensor, decay: float) -> Tensor:
         return decay * averaged_weights + (1.0 - decay) * current_weights
 
     def copy_to(self, parameters):

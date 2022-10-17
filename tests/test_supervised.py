@@ -21,12 +21,8 @@ from catalyst.experiments.supervised import SupervisedExperiment
 
 def _test_callbacks(test_callbacks, exp, stage="train"):
     exp_callbacks = exp.get_callbacks(stage)
-    exp_callbacks = OrderedDict(
-        sorted(exp_callbacks.items(), key=lambda t: t[0])
-    )
-    test_callbacks = OrderedDict(
-        sorted(test_callbacks.items(), key=lambda t: t[0])
-    )
+    exp_callbacks = OrderedDict(sorted(exp_callbacks.items(), key=lambda t: t[0]))
+    test_callbacks = OrderedDict(sorted(test_callbacks.items(), key=lambda t: t[0]))
 
     assert exp_callbacks.keys() == test_callbacks.keys()
     cbs = zip(exp_callbacks.values(), test_callbacks.values())
@@ -56,13 +52,15 @@ def test_defaults():
     )
 
     exp = SupervisedExperiment(
-        model=model, loaders=loaders, valid_loader="train",
+        model=model,
+        loaders=loaders,
+        valid_loader="train",
     )
     _test_callbacks(test_callbacks, exp)
 
 
 def test_defaults_verbose():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_verbose", VerboseLogger),
@@ -92,7 +90,7 @@ def test_defaults_verbose():
 
 
 def test_defaults_check():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_check", CheckRunCallback),
@@ -122,7 +120,7 @@ def test_defaults_check():
 
 
 def test_criterion():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_metrics", MetricManagerCallback),
@@ -157,7 +155,7 @@ def test_criterion():
 
 
 def test_optimizer():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_metrics", MetricManagerCallback),
@@ -192,7 +190,7 @@ def test_optimizer():
 
 
 def test_scheduler():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_metrics", MetricManagerCallback),
@@ -228,7 +226,7 @@ def test_scheduler():
 
 
 def test_all():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_verbose", VerboseLogger),
@@ -266,7 +264,7 @@ def test_all():
 
 
 def test_infer_defaults():
-    
+
     test_callbacks = OrderedDict([("_exception", ExceptionCallback)])
 
     model = torch.nn.Linear(10, 10)
@@ -290,7 +288,7 @@ def test_infer_defaults():
 
 
 def test_infer_all():
-    
+
     test_callbacks = OrderedDict(
         [
             ("_verbose", VerboseLogger),

@@ -9,20 +9,16 @@ from catalyst import metrics
 
 
 class DiceLoss(nn.Module):
-    
-
     def __init__(
         self,
         eps: float = 1e-7,
         threshold: float = None,
         activation: str = "Sigmoid",
     ):
-        
+
         super().__init__()
 
-        self.loss_fn = partial(
-            metrics.dice, eps=eps, threshold=threshold, activation=activation
-        )
+        self.loss_fn = partial(metrics.dice, eps=eps, threshold=threshold, activation=activation)
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor):
         """Calculates loss between ``logits`` and ``target`` tensors.
@@ -36,8 +32,6 @@ class DiceLoss(nn.Module):
         """
         dice = self.loss_fn(logits, targets)
         return 1 - dice
-
-
 
 
 __all__ = ["DiceLoss"]

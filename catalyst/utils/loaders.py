@@ -23,7 +23,9 @@ def get_native_batch_from_loader(loader: DataLoader, batch_index: int = 0):
 
 
 def get_native_batch_from_loaders(
-    loaders: Dict[str, DataLoader], loader: Union[str, int] = 0, batch_index: int = 0,
+    loaders: Dict[str, DataLoader],
+    loader: Union[str, int] = 0,
+    batch_index: int = 0,
 ):
     """
     Returns a batch from experiment loaders by its index or name.
@@ -102,14 +104,10 @@ def validate_loaders(loaders: Dict[str, DataLoader]) -> Dict[str, DataLoader]:
         for key, value in loaders.items():
             if not isinstance(value.sampler, (DistributedSampler, DistributedSamplerWrapper)):
                 warnings.warn(
-                    "With distributed training setup, "
-                    "you need ``DistributedSampler`` for your ``DataLoader``."
+                    "With distributed training setup, " "you need ``DistributedSampler`` for your ``DataLoader``."
                 )
                 # loaders[key] = _force_make_distributed_loader(value)
     return loaders
-
-
-
 
 
 __all__ = [

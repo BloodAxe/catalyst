@@ -3,29 +3,15 @@ import warnings
 from typing import Callable, Dict, TYPE_CHECKING, Mapping
 
 import torch
-from torch import nn
-from torch.distributed.optim import ZeroRedundancyOptimizer
-
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.typing import Optimizer
-from catalyst.utils.misc import maybe_recursive_call
-from catalyst.utils.torch import get_param_group_momentum
+from torch import nn
+from torch.distributed.optim import ZeroRedundancyOptimizer
 
 if TYPE_CHECKING:
     from catalyst.core.runner import IRunner
 
 logger = logging.getLogger(__name__)
-
-
-def zero_grad(optimizer: Optimizer) -> None:
-    """Perform an hacky way to zero gradients.
-
-    Args:
-        optimizer: optimizer with model parameters.
-    """
-    for group in optimizer.param_groups:
-        for p in group["params"]:
-            p.grad = None
 
 
 def grad_norm(model: nn.Module, prefix: str, norm_type: int) -> Dict[str, float]:
@@ -78,7 +64,6 @@ class OptimizerCallback(IOptimizerCallback):
         accumulation_steps: int = 1,
         grad_clip_params: Dict = None,
         loss_key: str = None,
-        use_fast_zero_grad: bool = True,
         log_grad_norm: bool = False,
         grad_norm_type: int = 2,
         grad_norm_prefix: str = "_grad_norm",
@@ -110,7 +95,6 @@ class OptimizerCallback(IOptimizerCallback):
         self.grad_clip_params = grad_clip_params
 
         self._optimizer_step_fn: Callable = None
-        self.use_fast_zero_grad = use_fast_zero_grad
 
         self.log_grad_norm = log_grad_norm
         self.grad_norm_prefix = grad_norm_prefix
@@ -189,10 +173,7 @@ class OptimizerCallback(IOptimizerCallback):
                 optimizer=self._optimizer,
                 grad_clip_params=self.grad_clip_params,
             )
-            if not self.use_fast_zero_grad:
-                maybe_recursive_call(self._optimizer, "zero_grad")
-            else:
-                maybe_recursive_call(self._optimizer, zero_grad)
+            self._optimizer.zero_grad(set_to_none=True)
             self._accumulation_counter = 0
 
     def on_epoch_end(self, runner: "IRunner") -> None:
@@ -204,15 +185,6 @@ class OptimizerCallback(IOptimizerCallback):
 
         if isinstance(self._optimizer, ZeroRedundancyOptimizer):
             self._optimizer.consolidate_state_dict()
-
-        lr = self._optimizer.param_groups[0]["lr"]
-        lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
-        runner.epoch_metrics[lr_name] = lr
-
-        momentum = get_param_group_momentum(self._optimizer)
-        if momentum is not None:
-            momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
-            runner.epoch_metrics[momentum_name] = momentum
 
 
 class AMPOptimizerCallback(IOptimizerCallback):
@@ -227,7 +199,6 @@ class AMPOptimizerCallback(IOptimizerCallback):
         accumulation_steps: int = 1,
         grad_clip_params: Dict = None,
         loss_key: str = None,
-        use_fast_zero_grad: bool = True,
         log_grad_norm: bool = False,
         grad_norm_type: int = 2,
         grad_norm_prefix: str = "_grad_norm",
@@ -240,8 +211,6 @@ class AMPOptimizerCallback(IOptimizerCallback):
             accumulation_steps: number of steps before
                 ``model.zero_grad()``
             grad_clip_params: params for gradient clipping
-            decouple_weight_decay: If True - decouple weight decay
-                regularization.
         """
         super().__init__(order=CallbackOrder.optimizer, node=CallbackNode.all)
         assert metric_key is None or loss_key is None
@@ -255,7 +224,6 @@ class AMPOptimizerCallback(IOptimizerCallback):
 
         self.accumulation_steps: int = accumulation_steps
         self._accumulation_counter: int = 0
-        self.use_fast_zero_grad = use_fast_zero_grad
 
         self.grad_clip_params = grad_clip_params
 
@@ -346,10 +314,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
                 optimizer=self._optimizer,
                 grad_clip_params=self.grad_clip_params,
             )
-            if not self.use_fast_zero_grad:
-                maybe_recursive_call(self._optimizer, "zero_grad")
-            else:
-                maybe_recursive_call(self._optimizer, zero_grad)
+            self._optimizer.zero_grad(set_to_none=True)
             self._accumulation_counter = 0
 
     def on_epoch_end(self, runner: "IRunner") -> None:
@@ -360,15 +325,6 @@ class AMPOptimizerCallback(IOptimizerCallback):
         """
         if isinstance(self._optimizer, ZeroRedundancyOptimizer):
             self._optimizer.consolidate_state_dict()
-
-        lr = self._optimizer.param_groups[0]["lr"]
-        lr_name = f"lr/{self.optimizer_key}" if self.optimizer_key is not None else "lr"
-        runner.epoch_metrics[lr_name] = lr
-
-        momentum = get_param_group_momentum(self._optimizer)
-        if momentum is not None:
-            momentum_name = f"momentum/{self.optimizer_key}" if self.optimizer_key is not None else "momentum"
-            runner.epoch_metrics[momentum_name] = momentum
 
     def on_stage_end(self, runner: "IRunner") -> None:
         """On stage end event.

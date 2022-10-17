@@ -52,19 +52,10 @@ class IMetricCallback(ABC, Callback):
 
         kv_types = (Mapping, dict, tuple, list, type(None))
 
-        is_value_input = (
-            isinstance(self.input_key, str) and self.input_key != "__all__"
-        )
-        is_value_output = (
-            isinstance(self.output_key, str) and self.output_key != "__all__"
-        )
-        is_kv_input = (
-            isinstance(self.input_key, kv_types) or self.input_key == "__all__"
-        )
-        is_kv_output = (
-            isinstance(self.output_key, kv_types)
-            or self.output_key == "__all__"
-        )
+        is_value_input = isinstance(self.input_key, str) and self.input_key != "__all__"
+        is_value_output = isinstance(self.output_key, str) and self.output_key != "__all__"
+        is_kv_input = isinstance(self.input_key, kv_types) or self.input_key == "__all__"
+        is_kv_output = isinstance(self.output_key, kv_types) or self.output_key == "__all__"
 
         if hasattr(self, "_compute_metric"):
             pass  # overridden in descendants
@@ -134,10 +125,7 @@ class IMetricCallback(ABC, Callback):
             Dict: processed scaled metric(s) with names
         """
         if isinstance(metric, Mapping):
-            metric = {
-                f"{self.prefix}{key}": value * self.multiplier
-                for key, value in metric.items()
-            }
+            metric = {f"{self.prefix}{key}": value * self.multiplier for key, value in metric.items()}
         elif isinstance(metric, (float, int, torch.Tensor)):
             metric = {f"{self.prefix}": metric * self.multiplier}
         else:
@@ -199,19 +187,11 @@ class ILoaderMetricCallback(IMetricCallback):
         Args:
             runner: current runner
         """
-        input = {
-            key: torch.from_numpy(np.concatenate(self.input[key], axis=0))
-            for key in self.input
-        }
-        output = {
-            key: torch.from_numpy(np.concatenate(self.output[key], axis=0))
-            for key in self.output
-        }
+        input = {key: torch.from_numpy(np.concatenate(self.input[key], axis=0)) for key in self.input}
+        output = {key: torch.from_numpy(np.concatenate(self.output[key], axis=0)) for key in self.output}
 
         input = {self.input_key: input["_data"]} if len(input) == 1 else input
-        output = (
-            {self.output_key: output["_data"]} if len(output) == 1 else output
-        )
+        output = {self.output_key: output["_data"]} if len(output) == 1 else output
 
         metrics = self._compute_metric(output, input)
         metrics = self._process_computed_metric(metrics)
@@ -319,31 +299,21 @@ class MetricAggregationCallback(Callback):
                 Must be either ``sum``, ``mean`` or ``weighted_sum``.
             multiplier: scale factor for the aggregated metric.
         """
-        super().__init__(
-            order=CallbackOrder.metric_aggregation, node=CallbackNode.all
-        )
+        super().__init__(order=CallbackOrder.metric_aggregation, node=CallbackNode.all)
 
         if prefix is None or not isinstance(prefix, str):
             raise ValueError("prefix must be str")
 
         if mode in ("sum", "mean", "gmean"):
             if metrics is not None and not isinstance(metrics, Iterable):
-                raise ValueError(
-                    "For `sum` or `mean` mode the metrics must be "
-                    "None or list or str (not dict)"
-                )
+                raise ValueError("For `sum` or `mean` mode the metrics must be " "None or list or str (not dict)")
         elif mode in ("weighted_sum", "weighted_mean"):
             if metrics is None or not isinstance(metrics, Mapping):
                 raise ValueError(
-                    "For `weighted_sum` or `weighted_mean` mode "
-                    "the metrics must be specified "
-                    "and must be a dict"
+                    "For `weighted_sum` or `weighted_mean` mode " "the metrics must be specified " "and must be a dict"
                 )
         else:
-            raise NotImplementedError(
-                "mode must be `sum`, `mean` "
-                "or `weighted_sum` or `weighted_mean`"
-            )
+            raise NotImplementedError("mode must be `sum`, `mean` " "or `weighted_sum` or `weighted_mean`")
 
         assert scope in ("batch", "loader", "epoch")
 
@@ -357,19 +327,12 @@ class MetricAggregationCallback(Callback):
         self.multiplier = multiplier
 
         if mode in ("sum", "weighted_sum", "weighted_mean"):
-            self.aggregation_fn = (
-                lambda x: torch.sum(torch.stack(x)) * multiplier
-            )
+            self.aggregation_fn = lambda x: torch.sum(torch.stack(x)) * multiplier
             if mode == "weighted_mean":
                 weights_sum = sum(metrics.items())
-                self.metrics = {
-                    key: weight / weights_sum
-                    for key, weight in metrics.items()
-                }
+                self.metrics = {key: weight / weights_sum for key, weight in metrics.items()}
         elif mode == "mean":
-            self.aggregation_fn = (
-                lambda x: torch.mean(torch.stack(x)) * multiplier
-            )
+            self.aggregation_fn = lambda x: torch.mean(torch.stack(x)) * multiplier
         elif mode == "gmean":
             self.aggregation_fn = (
                 lambda x: torch.exp(torch.mean(torch.log(torch.stack(x).clamp_min(1e-6)))) * multiplier
@@ -378,9 +341,7 @@ class MetricAggregationCallback(Callback):
     def _preprocess(self, metrics: Any) -> List[float]:
         if self.metrics is not None:
             if self.mode == "weighted_sum":
-                result = [
-                    metrics[key] * value for key, value in self.metrics.items()
-                ]
+                result = [metrics[key] * value for key, value in self.metrics.items()]
             else:
                 result = [metrics[key] for key in self.metrics]
         else:
@@ -428,7 +389,8 @@ class MetricManagerCallback(Callback):
     def __init__(self):
         """Init."""
         super().__init__(
-            order=CallbackOrder.logging - 1, node=CallbackNode.all,
+            order=CallbackOrder.logging - 1,
+            node=CallbackNode.all,
         )
         self.meters: Dict[str, AverageValueMeter] = None
 

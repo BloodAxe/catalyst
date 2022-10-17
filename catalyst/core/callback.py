@@ -221,9 +221,7 @@ class CallbackWrapper(Callback):
                 default ``True``
         """
         if base_callback is None or not isinstance(base_callback, Callback):
-            raise ValueError(
-                f"Expected callback but got - {type(base_callback)}!"
-            )
+            raise ValueError(f"Expected callback but got - {type(base_callback)}!")
         super().__init__(
             order=base_callback.order,
             node=base_callback.node,

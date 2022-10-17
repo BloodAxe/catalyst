@@ -1,4 +1,4 @@
-.PHONY: check-docs docker docker-fp16 docker-dev docker-dev-fp16 install-from-source clean
+.PHONY: check-docs install-from-source clean
 
 check-docs:
 	bash ./bin/tests/check_docs.sh

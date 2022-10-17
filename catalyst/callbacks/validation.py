@@ -15,7 +15,8 @@ class ValidationManagerCallback(Callback):
     def __init__(self):
         """Initialisation for ValidationManagerCallback."""
         super().__init__(
-            order=CallbackOrder.validation, node=CallbackNode.all,
+            order=CallbackOrder.validation,
+            node=CallbackNode.all,
         )
 
     def on_epoch_start(self, runner: "IRunner") -> None:
@@ -47,14 +48,10 @@ class ValidationManagerCallback(Callback):
 
         current_valid_metric = runner.valid_metrics[runner.main_metric]
         if runner.minimize_metric:
-            best_valid_metric = runner.best_valid_metrics.get(
-                runner.main_metric, float("+inf")
-            )
+            best_valid_metric = runner.best_valid_metrics.get(runner.main_metric, float("+inf"))
             is_best = current_valid_metric < best_valid_metric
         else:
-            best_valid_metric = runner.best_valid_metrics.get(
-                runner.main_metric, float("-inf")
-            )
+            best_valid_metric = runner.best_valid_metrics.get(runner.main_metric, float("-inf"))
             is_best = current_valid_metric > best_valid_metric
 
         if is_best:

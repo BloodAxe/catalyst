@@ -64,9 +64,7 @@ def input_for_balance_batch_sampler() -> TLabelsPK:
     return input_cases
 
 
-def check_balance_batch_sampler_epoch(
-    labels: List[int], p: int, k: int
-) -> None:
+def check_balance_batch_sampler_epoch(labels: List[int], p: int, k: int) -> None:
     """
     Args:
         labels: list of classes labels
@@ -106,9 +104,7 @@ def check_balance_batch_sampler_epoch(
     # epoch-level invariants
     num_classes_in_data = len(set(labels))
     num_classes_in_epoch = len(set(sampled_classes))
-    assert (num_classes_in_data == num_classes_in_epoch) or (
-        num_classes_in_data == num_classes_in_epoch + 1
-    )
+    assert (num_classes_in_data == num_classes_in_epoch) or (num_classes_in_data == num_classes_in_epoch + 1)
 
     assert max(sampled_ids) <= len(labels) - 1
 

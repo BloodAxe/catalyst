@@ -18,9 +18,7 @@ PRUNING_FN = {  # noqa: WPS407
 
 
 def _wrap_pruning_fn(pruning_fn, *args, **kwargs):
-    return lambda module, name, amount: pruning_fn(
-        module, name, amount, *args, **kwargs
-    )
+    return lambda module, name, amount: pruning_fn(module, name, amount, *args, **kwargs)
 
 
 class PruningCallback(Callback):
@@ -76,28 +74,17 @@ class PruningCallback(Callback):
         if isinstance(pruning_fn, str):
             if pruning_fn not in PRUNING_FN.keys():
                 raise Exception(
-                    f"Pruning function should be in {PRUNING_FN.keys()}, "
-                    "global pruning is not currently support."
+                    f"Pruning function should be in {PRUNING_FN.keys()}, " "global pruning is not currently support."
                 )
             if "unstructured" not in pruning_fn:
                 if dim is None:
-                    raise Exception(
-                        "If you are using structured pruning you"
-                        "need to specify dim in callback args"
-                    )
+                    raise Exception("If you are using structured pruning you" "need to specify dim in callback args")
                 if pruning_fn == "ln_structured":
                     if l_norm is None:
-                        raise Exception(
-                            "If you are using ln_unstructured you"
-                            "need to specify n in callback args"
-                        )
-                    self.pruning_fn = _wrap_pruning_fn(
-                        prune.ln_structured, dim=dim, n=l_norm
-                    )
+                        raise Exception("If you are using ln_unstructured you" "need to specify n in callback args")
+                    self.pruning_fn = _wrap_pruning_fn(prune.ln_structured, dim=dim, n=l_norm)
                 else:
-                    self.pruning_fn = _wrap_pruning_fn(
-                        PRUNING_FN[pruning_fn], dim=dim
-                    )
+                    self.pruning_fn = _wrap_pruning_fn(PRUNING_FN[pruning_fn], dim=dim)
             else:  # unstructured
                 self.pruning_fn = PRUNING_FN[pruning_fn]
         else:
@@ -112,9 +99,7 @@ class PruningCallback(Callback):
                 "You disabled pruning pruning both on epoch and stage end."
                 "Model won't be pruned by this callback."
             )
-        self.remove_reparametrization_on_stage_end = (
-            remove_reparametrization_on_stage_end
-        )
+        self.remove_reparametrization_on_stage_end = remove_reparametrization_on_stage_end
         self.keys_to_prune = keys_to_prune
         self.amount = amount
         self.reinitialize_after_pruning = reinitialize_after_pruning

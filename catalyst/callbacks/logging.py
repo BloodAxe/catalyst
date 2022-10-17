@@ -25,7 +25,9 @@ class VerboseLogger(ILoggerCallback):
     """Logs the params into console."""
 
     def __init__(
-        self, always_show: List[str] = None, never_show: List[str] = None,
+        self,
+        always_show: List[str] = None,
+        never_show: List[str] = None,
     ):
         """
         Args:
@@ -37,17 +39,12 @@ class VerboseLogger(ILoggerCallback):
         super().__init__(order=CallbackOrder.logging, node=CallbackNode.master)
         self.tqdm: tqdm = None
         self.step = 0
-        self.always_show = (
-            always_show if always_show is not None else ["_timer/_fps"]
-        )
+        self.always_show = always_show if always_show is not None else ["_timer/_fps"]
         self.never_show = never_show if never_show is not None else []
 
         intersection = set(self.always_show) & set(self.never_show)
 
-        error_message = (
-            f"Intersection of always_show and "
-            f"never_show has common values: {intersection}"
-        )
+        error_message = f"Intersection of always_show and " f"never_show has common values: {intersection}"
         if bool(intersection):
             raise ValueError(error_message)
 
@@ -65,8 +62,7 @@ class VerboseLogger(ILoggerCallback):
         self.step = 0
         self.tqdm = tqdm(
             total=runner.loader_len,
-            desc=f"{runner.epoch}/{runner.num_epochs}"
-            f" * Epoch ({runner.loader_name})",
+            desc=f"{runner.epoch}/{runner.num_epochs}" f" * Epoch ({runner.loader_name})",
             leave=True,
             ncols=0,
             file=sys.stdout,
@@ -194,9 +190,7 @@ class TensorboardLogger(ILoggerCallback):
 
         self.loggers = {}
 
-    def _log_metrics(
-        self, metrics: Dict[str, float], step: int, mode: str, suffix=""
-    ):
+    def _log_metrics(self, metrics: Dict[str, float], step: int, mode: str, suffix=""):
         if self.metrics_to_log is None:
             metrics_to_log = sorted(metrics.keys())
         else:
@@ -204,9 +198,7 @@ class TensorboardLogger(ILoggerCallback):
 
         for name in metrics_to_log:
             if name in metrics:
-                self.loggers[mode].add_scalar(
-                    f"{name}{suffix}", metrics[name], step
-                )
+                self.loggers[mode].add_scalar(f"{name}{suffix}", metrics[name], step)
 
     def on_stage_start(self, runner: "IRunner") -> None:
         """Stage start hook. Check ``logdir`` correctness.

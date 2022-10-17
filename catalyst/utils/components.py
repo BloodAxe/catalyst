@@ -12,7 +12,6 @@ from catalyst.utils.distributed import (
     check_ddp_wrapped,
     get_distributed_params,
     get_rank,
-    initialize_apex,
 )
 from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.torch import get_device
@@ -57,20 +56,13 @@ def process_components(
     elif isinstance(device, str):
         device = torch.device(device)
 
-    is_apex_enabled = distributed_params.pop("apex", False) and check_apex_available()
-
     is_amp_enabled = distributed_params.get("amp", False) and check_amp_available()
-
-    if is_apex_enabled and is_amp_enabled:
-        raise ValueError(
-            "Both NVidia Apex and Torch.Amp are enabled. " "You must choose only one mixed precision backend"
-        )
     model: Model = maybe_recursive_call(model, "to", device=device)
 
     if check_ddp_wrapped(model):
         pass
-    # distributed data parallel run (ddp) (with apex support)
     elif get_rank() >= 0:
+        # distributed data parallel run (ddp) (with apex support)
         assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
 
         local_rank = distributed_params.pop("local_rank", 0) or 0
@@ -79,37 +71,18 @@ def process_components(
 
         syncbn = distributed_params.pop("syncbn", False)
 
-        if is_apex_enabled:
-            import apex
+        if syncbn:
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-            if syncbn:
-                model = apex.parallel.convert_syncbn_model(model)
-
-            model, optimizer = initialize_apex(model, optimizer, **distributed_params)
-            model = apex.parallel.DistributedDataParallel(model)
-        else:
-            if syncbn:
-                model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-
-            find_unused = distributed_params.get("find_unused_parameters", False)
-            model = nn.parallel.DistributedDataParallel(
-                model,
-                device_ids=[local_rank],
-                output_device=local_rank,
-                find_unused_parameters=find_unused,
-            )
-    # data parallel run (dp) (with apex support)
-    else:
-        # apex issue https://github.com/deepset-ai/FARM/issues/210
-        use_apex = (is_apex_enabled and torch.cuda.device_count() == 1) or (
-            is_apex_enabled and torch.cuda.device_count() > 1 and distributed_params.get("opt_level", "O0") == "O1"
+        find_unused = distributed_params.get("find_unused_parameters", False)
+        model = nn.parallel.DistributedDataParallel(
+            model,
+            device_ids=[local_rank],
+            output_device=local_rank,
+            find_unused_parameters=find_unused,
         )
-
-        if use_apex:
-            assert isinstance(model, nn.Module), "Apex training is not available for KV model"
-
-            model, optimizer = initialize_apex(model, optimizer, **distributed_params)
-
+    else:
+        # data parallel run (dp) (with apex support)
         if torch.cuda.device_count() > 1 and device.type != "cpu" and device.index is None:
             if isinstance(model, nn.Module):
                 model = nn.DataParallel(model)

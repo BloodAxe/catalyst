@@ -49,9 +49,7 @@ class DynamicQuantizationCallback(Callback):
         super().__init__(order=CallbackOrder.external)
 
         if mode not in ["best", "last"]:
-            raise ValueError(
-                f"Unknown `mode` '{mode}'. " f"Must be 'best' or 'last'"
-            )
+            raise ValueError(f"Unknown `mode` '{mode}'. " f"Must be 'best' or 'last'")
 
         self.metric = metric
         self.mode = mode

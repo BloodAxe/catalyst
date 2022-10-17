@@ -1,12 +1,10 @@
 """
 Simple timer.
 """
-from time import time
+from time import perf_counter
 
 
 class TimeManager(object):
-    
-
     def __init__(self):
         """Initialization"""
         self._starts = {}
@@ -18,7 +16,7 @@ class TimeManager(object):
         Args:
             name: name of a timer
         """
-        self._starts[name] = time()
+        self._starts[name] = perf_counter()
 
     def stop(self, name: str) -> None:
         """Stops timer ``name``.
@@ -28,7 +26,7 @@ class TimeManager(object):
         """
         assert name in self._starts, f"Timer '{name}' wasn't started"
 
-        self.elapsed[name] = time() - self._starts[name]
+        self.elapsed[name] = perf_counter() - self._starts[name]
         del self._starts[name]
 
     def reset(self) -> None:

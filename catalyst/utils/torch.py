@@ -131,9 +131,7 @@ def prepare_cudnn(deterministic: bool = None, benchmark: bool = None) -> None:
         # CuDNN reproducibility
         # https://pytorch.org/docs/stable/notes/randomness.html#cudnn
         if deterministic is None:
-            deterministic = (
-                os.environ.get("CUDNN_DETERMINISTIC", "True") == "True"
-            )
+            deterministic = os.environ.get("CUDNN_DETERMINISTIC", "True") == "True"
         cudnn.deterministic = deterministic
 
         # https://discuss.pytorch.org/t/how-should-i-disable-using-cudnn-in-my-code/38053/4
@@ -218,9 +216,7 @@ def get_requires_grad(model: Model):
     return requires_grad
 
 
-def set_requires_grad(
-    model: Model, requires_grad: Union[bool, Dict[str, bool]]
-):
+def set_requires_grad(model: Model, requires_grad: Union[bool, Dict[str, bool]]):
     """Sets the ``requires_grad`` value for all model parameters.
 
     Example::
@@ -237,9 +233,7 @@ def set_requires_grad(
     """
     if isinstance(requires_grad, dict):
         for name, param in model.named_parameters():
-            assert (
-                name in requires_grad
-            ), f"Parameter `{name}` does not exist in requires_grad"
+            assert name in requires_grad, f"Parameter `{name}` does not exist in requires_grad"
             param.requires_grad = requires_grad[name]
     else:
         requires_grad = bool(requires_grad)
@@ -270,20 +264,14 @@ def get_network_output(net: Model, *input_shapes_args, **input_shapes_kwargs):
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
         if isinstance(input_shape, dict):
             input_t = {
-                key: torch.Tensor(torch.randn((1,) + key_input_shape))
-                for key, key_input_shape in input_shape.items()
+                key: torch.Tensor(torch.randn((1,) + key_input_shape)) for key, key_input_shape in input_shape.items()
             }
         else:
             input_t = torch.Tensor(torch.randn((1,) + input_shape))
         return input_t
 
-    input_args = [
-        _rand_sample(input_shape) for input_shape in input_shapes_args
-    ]
-    input_kwargs = {
-        key: _rand_sample(input_shape)
-        for key, input_shape in input_shapes_kwargs.items()
-    }
+    input_args = [_rand_sample(input_shape) for input_shape in input_shapes_args]
+    input_kwargs = {key: _rand_sample(input_shape) for key, input_shape in input_shapes_kwargs.items()}
 
     output_t = net(*input_args, **input_kwargs)
     return output_t

@@ -149,9 +149,7 @@ class SupervisedRunner(Runner):
         self.output = self.forward(batch)
 
     @torch.no_grad()
-    def predict_batch(
-        self, batch: Mapping[str, Any], **kwargs
-    ) -> Mapping[str, Any]:
+    def predict_batch(self, batch: Mapping[str, Any], **kwargs) -> Mapping[str, Any]:
         """
         Run model inference on specified data batch.
 

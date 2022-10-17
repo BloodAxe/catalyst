@@ -53,14 +53,16 @@ def average_weights(state_dicts: List[dict]) -> OrderedDict:
     average_dict = OrderedDict()
     for k in state_dicts[0].keys():
         average_dict[k] = torch.div(
-            sum(state_dict[k] for state_dict in state_dicts), len(state_dicts),
+            sum(state_dict[k] for state_dict in state_dicts),
+            len(state_dicts),
         )
 
     return average_dict
 
 
 def get_averaged_weights_by_path_mask(
-    path_mask: str, logdir: Union[str, Path] = None,
+    path_mask: str,
+    logdir: Union[str, Path] = None,
 ) -> OrderedDict:
     """
     Averaging of input weights and saving them.
@@ -75,9 +77,7 @@ def get_averaged_weights_by_path_mask(
     if logdir is None:
         models_pathes = glob.glob(path_mask)
     else:
-        models_pathes = glob.glob(
-            os.path.join(logdir, "checkpoints", path_mask)
-        )
+        models_pathes = glob.glob(os.path.join(logdir, "checkpoints", path_mask))
 
     all_weights = [_load_weights(path) for path in models_pathes]
     averaged_dict = average_weights(all_weights)

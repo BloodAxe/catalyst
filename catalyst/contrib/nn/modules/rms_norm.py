@@ -10,9 +10,7 @@ class RMSNorm(nn.Module):
     @TODO: Docs (link to paper). Contribution is welcome.
     """
 
-    def __init__(
-        self, dimension: int, epsilon: float = 1e-8, is_bias: bool = False
-    ):
+    def __init__(self, dimension: int, epsilon: float = 1e-8, is_bias: bool = False):
         """
         Args:
             dimension: the dimension of the layer output to normalize
@@ -30,8 +28,8 @@ class RMSNorm(nn.Module):
             self.bias = nn.Parameter(torch.zeros(self.dimension))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        
-        x_std = torch.sqrt(torch.mean(x ** 2, -1, keepdim=True))
+
+        x_std = torch.sqrt(torch.mean(x**2, -1, keepdim=True))
         x_norm = x / (x_std + self.epsilon)
         if self.is_bias:
             return self.scale * x_norm + self.bias

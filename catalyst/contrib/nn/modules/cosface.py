@@ -50,9 +50,7 @@ class CosFace(nn.Module):
         self.s = s
         self.m = m
 
-        self.weight = nn.Parameter(
-            torch.FloatTensor(out_features, in_features)
-        )
+        self.weight = nn.Parameter(torch.FloatTensor(out_features, in_features))
         nn.init.xavier_uniform_(self.weight)
 
     def __repr__(self) -> str:
@@ -67,9 +65,7 @@ class CosFace(nn.Module):
         )
         return rep
 
-    def forward(
-        self, input: torch.Tensor, target: torch.LongTensor
-    ) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.LongTensor) -> torch.Tensor:
         """
         Args:
             input: input features,
@@ -144,9 +140,7 @@ class AdaCos(nn.Module):
         self.s = math.sqrt(2) * math.log(out_features - 1)
         self.eps = eps
 
-        self.weight = nn.Parameter(
-            torch.FloatTensor(out_features, in_features)
-        )
+        self.weight = nn.Parameter(torch.FloatTensor(out_features, in_features))
         nn.init.xavier_uniform_(self.weight)
 
     def __repr__(self) -> str:
@@ -161,9 +155,7 @@ class AdaCos(nn.Module):
         )
         return rep
 
-    def forward(
-        self, input: torch.Tensor, target: torch.LongTensor
-    ) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.LongTensor) -> torch.Tensor:
         """
         Args:
             input: input features,
@@ -180,9 +172,7 @@ class AdaCos(nn.Module):
             (out_features).
         """
         cos_theta = F.linear(F.normalize(input), F.normalize(self.weight))
-        theta = torch.acos(
-            torch.clamp(cos_theta, -1.0 + self.eps, 1.0 - self.eps)
-        )
+        theta = torch.acos(torch.clamp(cos_theta, -1.0 + self.eps, 1.0 - self.eps))
 
         one_hot = torch.zeros_like(cos_theta)
         one_hot.scatter_(1, target.view(-1, 1).long(), 1)
@@ -199,9 +189,7 @@ class AdaCos(nn.Module):
                     .mean()
                 )
                 theta_median = theta[one_hot > 0].median()
-                theta_median = torch.min(
-                    torch.full_like(theta_median, math.pi / 4), theta_median
-                )
+                theta_median = torch.min(torch.full_like(theta_median, math.pi / 4), theta_median)
                 self.s = (torch.log(b_avg) / torch.cos(theta_median)).item()
 
         logits = self.s * cos_theta

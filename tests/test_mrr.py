@@ -35,9 +35,7 @@ def test_mrr():
     y_pred05 = [0.5, 0.2]
     y_true = [0.0, 1.0]
 
-    value = mrr(
-        torch.Tensor([y_pred1, y_pred05]), torch.Tensor([y_true, y_true])
-    )
+    value = mrr(torch.Tensor([y_pred1, y_pred05]), torch.Tensor([y_true, y_true]))
     assert value[0][0] == 1.0
     assert value[1][0] == 0.5
 

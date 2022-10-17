@@ -28,9 +28,7 @@ class MarginLoss(nn.Module):
         self.beta = beta
         self.skip_labels = skip_labels
 
-    def forward(
-        self, embeddings: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, embeddings: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """
         Forward method for the margin loss.
 

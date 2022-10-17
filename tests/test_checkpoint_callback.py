@@ -11,7 +11,6 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 
-
 def test_load_best_on_stage_end():
     old_stdout = sys.stdout
     sys.stdout = str_stdout = StringIO()

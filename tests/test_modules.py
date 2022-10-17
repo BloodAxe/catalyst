@@ -8,7 +8,7 @@ from catalyst.contrib.nn.modules import ArcFace, CosFace, SoftMax
 
 
 def normalize(m: np.ndarray) -> np.ndarray:
-    m_s = np.sqrt((m ** 2).sum(axis=1))[:, np.newaxis]  # for each row
+    m_s = np.sqrt((m**2).sum(axis=1))[:, np.newaxis]  # for each row
     return m / m_s
 
 
@@ -17,9 +17,7 @@ def softmax(x: np.ndarray) -> np.ndarray:
     return e_x / e_x.sum(1)[:, np.newaxis]  # for each row
 
 
-def cross_entropy(
-    preds: np.ndarray, targs: np.ndarray, axis: int = 1
-) -> float:
+def cross_entropy(preds: np.ndarray, targs: np.ndarray, axis: int = 1) -> float:
     return -(targs * np.log(softmax(preds))).sum(axis)
 
 
