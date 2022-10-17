@@ -1,9 +1,10 @@
 from functools import partial
-from functools import partial
 from typing import Optional
 
 import numpy as np
 import torch
+from pytorch_toolbelt.utils import all_gather, to_numpy
+
 from catalyst.core import Callback, CallbackOrder, IRunner
 
 __all__ = [

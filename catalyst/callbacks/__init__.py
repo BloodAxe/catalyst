@@ -6,11 +6,10 @@ from catalyst.callbacks.checkpoint import (
     CheckpointCallback,
     IterationCheckpointCallback,
 )
-from catalyst.callbacks.control_flow import ControlFlowCallback
+from catalyst.callbacks.control.control_flow import ControlFlowCallback
 from catalyst.callbacks.criterion import CriterionCallback
-from catalyst.callbacks.early_stop import (
+from catalyst.callbacks.control.early_stopping import (
     EarlyStoppingCallback,
-    CheckRunCallback,
 )
 from catalyst.callbacks.exception import ExceptionCallback
 from catalyst.callbacks.logging import (
@@ -19,7 +18,6 @@ from catalyst.callbacks.logging import (
     ConsoleLogger,
     TensorboardLogger,
 )
-from catalyst.callbacks.meter import MeterMetricsCallback
 from catalyst.callbacks.metric import (
     IMetricCallback,
     IBatchMetricCallback,
@@ -35,7 +33,6 @@ from catalyst.callbacks.optimizer import (
     OptimizerCallback,
     AMPOptimizerCallback,
 )
-from catalyst.callbacks.periodic_loader import PeriodicLoaderCallback
 from catalyst.callbacks.scheduler import (
     ISchedulerCallback,
     ILRUpdater,
@@ -43,9 +40,6 @@ from catalyst.callbacks.scheduler import (
     LRFinder,
 )
 from catalyst.callbacks.timer import TimerCallback
-from catalyst.callbacks.tracing import TracingCallback, TracerCallback
 from catalyst.callbacks.validation import ValidationManagerCallback
 
-from catalyst.callbacks.quantization import DynamicQuantizationCallback
-from catalyst.callbacks.pruning import PruningCallback
 from catalyst.callbacks.ema import EMABatchCallback, EMAEpochCallback
