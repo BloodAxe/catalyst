@@ -3,7 +3,6 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import torch
 
-from catalyst.contrib.nn.schedulers import BatchScheduler, OneCycleLRWithWarmup
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.utils.torch import get_param_group_momentum
 
@@ -177,8 +176,6 @@ class SchedulerCallback(ISchedulerCallback):
             else:
                 self.mode = "epoch"
 
-        if isinstance(scheduler, OneCycleLRWithWarmup) and self.mode == "batch":
-            scheduler.reset()
         assert self.mode is not None
 
     def on_loader_start(self, runner: "IRunner") -> None:
@@ -187,8 +184,7 @@ class SchedulerCallback(ISchedulerCallback):
         Args:
             runner: current runner
         """
-        if runner.is_train_loader and isinstance(self._scheduler, OneCycleLRWithWarmup) and self.mode == "batch":
-            self._scheduler.recalculate(loader_len=runner.loader_len, current_step=runner.epoch - 1)
+        pass
 
     def on_batch_end(self, runner: "IRunner") -> None:
         """Batch end hook.
