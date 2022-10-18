@@ -2,9 +2,6 @@ from enum import IntFlag
 from typing import TYPE_CHECKING
 
 
-from catalyst.core.runner import IRunner
-
-
 class CallbackNode(IntFlag):
     """Callback node usage flag during distributed training.
 

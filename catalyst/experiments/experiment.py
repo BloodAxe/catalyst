@@ -15,7 +15,6 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from catalyst.callbacks.checkpoint import CheckpointCallback
-from catalyst.callbacks.early_stop import CheckRunCallback
 from catalyst.callbacks.exception import ExceptionCallback
 from catalyst.callbacks.logging import (
     ConsoleLogger,
@@ -58,7 +57,6 @@ class Experiment(IExperiment):
         minimize_metric: bool = True,
         verbose: bool = False,
         check_time: bool = False,
-        check_run: bool = False,
         stage_kwargs: Dict = None,
         checkpoint_data: Dict = None,
         distributed_params: Dict = None,
@@ -97,11 +95,6 @@ class Experiment(IExperiment):
                 to the console.
             check_time: if True, computes the execution time
                 of training process and displays it to the console.
-            check_run: if True, we run only 3 batches per loader
-                and 3 epochs per stage to check pipeline correctness
-            overfit: if True, then takes only one batch per loader
-                for model overfitting, for advance usage please check
-                ``BatchOverfitCallback``
             stage_kwargs: additional stage params
             checkpoint_data: additional data to save in checkpoint,
                 for example: ``class_names``, ``date_of_training``, etc
@@ -134,7 +127,6 @@ class Experiment(IExperiment):
         self._minimize_metric = minimize_metric
         self._verbose = verbose
         self._check_time = check_time
-        self._check_run = check_run
         self._stage_kwargs = stage_kwargs or {}
         self._checkpoint_data = checkpoint_data or {}
         self._distributed_params = distributed_params or {}
@@ -260,8 +252,6 @@ class Experiment(IExperiment):
             default_callbacks.append(("_verbose", VerboseLogger))
         if self._check_time:
             default_callbacks.append(("_timer", TimerCallback))
-        if self._check_run:
-            default_callbacks.append(("_check", CheckRunCallback))
 
         if not stage.startswith("infer"):
             default_callbacks.append(("_metrics", MetricManagerCallback))

@@ -8,7 +8,6 @@ from torch import nn
 from catalyst.typing import Criterion, Device, Model, Optimizer, Scheduler
 from catalyst.utils.distributed import (
     check_amp_available,
-    check_apex_available,
     check_ddp_wrapped,
     get_distributed_params,
     get_rank,

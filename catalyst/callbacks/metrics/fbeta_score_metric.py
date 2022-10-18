@@ -1,3 +1,9 @@
+from typing import Optional, Callable
+
+from catalyst.core import Callback
+from torch import Tensor
+
+
 class F1ScoreCallback(Callback):
     """
     Compute F1 metric score
@@ -7,7 +13,7 @@ class F1ScoreCallback(Callback):
     def __init__(
         self,
         num_classes: int,
-        outputs_to_labels: Callable[[Tensor], Tensor] = argmax_over_dim_1,
+        outputs_to_labels: Callable[[Tensor], Tensor],
         targets_key: str = "targets",
         predictions_key: str = "logits",
         prefix: str = "f1",

@@ -49,13 +49,7 @@ from catalyst.utils.misc import (
     fn_ends_with_pass,
 )
 from catalyst.utils.misc import find_value_ids
-from catalyst.utils.scripts import (
-    import_module,
-    dump_code,
-    dump_python_files,
-    dump_experiment_code,
-    distributed_cmd_run,
-)
+
 from catalyst.utils.seed import set_global_seed
 from catalyst.utils.swa import (
     average_weights,
@@ -76,7 +70,6 @@ from catalyst.utils.torch import (
     get_param_group_momentum,
     prepare_cudnn,
     process_model_params,
-    set_optimizer_momentum,
     get_requires_grad,
     set_requires_grad,
     get_network_output,

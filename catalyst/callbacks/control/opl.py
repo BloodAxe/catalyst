@@ -1,9 +1,10 @@
 import numpy as np
 from catalyst.core import Callback, CallbackOrder, IRunner
 
-from ..torch_utils import to_numpy
 
 __all__ = ["MulticlassOnlinePseudolabelingCallback", "BCEOnlinePseudolabelingCallback", "PseudolabelDatasetMixin"]
+
+from pytorch_toolbelt.utils import to_numpy
 
 
 class PseudolabelDatasetMixin:
