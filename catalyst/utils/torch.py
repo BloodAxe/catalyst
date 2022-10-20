@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import os
 import re
 from typing import Dict, Iterable, List, Union
@@ -23,7 +24,14 @@ def get_optimizable_params(model_or_params):
     return master_params
 
 
-def get_param_group_momentum(optimizer_param_group) -> float:
+@dataclasses.dataclass
+class OptimizerParamGroupParams:
+    learning_rate: float
+    weight_decay: float
+    momentum: float
+
+
+def get_param_group_params(optimizer_param_group) -> OptimizerParamGroupParams:
     """Get momentum of current optimizer.
 
     Args:
@@ -34,8 +42,12 @@ def get_param_group_momentum(optimizer_param_group) -> float:
     """
     betas = optimizer_param_group.get("betas", None)
     momentum = optimizer_param_group.get("momentum", None)
-    return betas[0] if betas is not None else momentum
+    lr = optimizer_param_group["lr"]
+    weight_decay = optimizer_param_group["weight_decay"]
 
+    return OptimizerParamGroupParams(
+        learning_rate=lr, weight_decay=weight_decay, momentum=betas[0] if betas is not None else momentum
+    )
 
 
 def get_device() -> torch.device:
@@ -327,9 +339,10 @@ def normalize(samples: Tensor) -> Tensor:
 
 __all__ = [
     "get_optimizable_params",
-    "get_param_group_momentum",
+    "get_param_group_params",
     "get_device",
     "get_available_gpus",
+    "OptimizerParamGroupParams",
     "get_activation_fn",
     "any2device",
     "prepare_cudnn",

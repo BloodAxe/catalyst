@@ -17,7 +17,6 @@ __all__ = [
 from pytorch_toolbelt.utils.catalyst import get_tensorboard_logger
 
 
-
 class HyperParametersCallback(Callback):
     """
     Callback that logs hyperparameters for training session and target metric value.

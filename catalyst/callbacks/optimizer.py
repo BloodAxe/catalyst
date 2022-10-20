@@ -10,7 +10,7 @@ from torch.distributed.optim import ZeroRedundancyOptimizer
 
 
 from catalyst.core.runner import IRunner
-from catalyst.utils import get_param_group_momentum
+from catalyst.utils import get_param_group_params
 
 logger = logging.getLogger(__name__)
 
@@ -367,12 +367,15 @@ class OptimizerLoggerCallback(Callback):
 
         for pg_index, pg in enumerate(_optimizer.param_groups):
             pg_name = pg["name"] if "name" in pg else str(pg_index)
-            learning_rate = pg["lr"]
-            runner.batch_metrics[f"{prefix}/{pg_name}/lr"] = learning_rate
+            pg_params = get_param_group_params(pg)
 
-            momentum = get_param_group_momentum(pg)
-            if momentum is not None:
-                runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = momentum
+            runner.batch_metrics[f"{prefix}/{pg_name}/learning_rate"] = pg_params.learning_rate
+
+            if pg_params.weight_decay is not None:
+                runner.batch_metrics[f"{prefix}/{pg_name}/weight_decay"] = pg_params.weight_decay
+
+            if pg_params.momentum is not None:
+                runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
 
 
 __all__ = ["IOptimizerCallback", "AMPOptimizerCallback", "OptimizerCallback", "OptimizerLoggerCallback"]

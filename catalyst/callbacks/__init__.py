@@ -32,12 +32,11 @@ from catalyst.callbacks.optimizer import (
     IOptimizerCallback,
     OptimizerCallback,
     AMPOptimizerCallback,
+    OptimizerLoggerCallback,
 )
 from catalyst.callbacks.scheduler import (
     ISchedulerCallback,
-    ILRUpdater,
     SchedulerCallback,
-    LRFinder,
 )
 from catalyst.callbacks.timer import TimerCallback
 from catalyst.callbacks.validation import ValidationManagerCallback

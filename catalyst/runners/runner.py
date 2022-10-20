@@ -37,7 +37,6 @@ class Runner(IStageBasedRunner):
         stage_kwargs: Dict = None,
         checkpoint_data: Dict = None,
         fp16: Union[Dict, bool] = None,
-        distributed: bool = False,
         timeit: bool = False,
         initial_seed: int = 42,
         state_kwargs: Dict = None,
@@ -120,7 +119,7 @@ class Runner(IStageBasedRunner):
             initial_seed=initial_seed,
         )
         self.experiment = experiment
-        distributed_cmd_run(self.run_experiment, distributed)
+        self.run_experiment(self.experiment)
 
 
 __all__ = ["Runner"]

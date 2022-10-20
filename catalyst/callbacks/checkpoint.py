@@ -455,7 +455,9 @@ class CheckpointCallback(BaseCheckpointCallback):
         if self.save_n_best > 0:
             best_valid_metrics = top_best_checkpoints[0][1]
             metrics = (
-                [("best", best_valid_metrics), ("last", last_valid_metrics)] + top_best_checkpoints + all_epochs_metrics
+                [("best", best_valid_metrics), ("last", last_valid_metrics)]
+                + top_best_checkpoints
+                + all_epochs_metrics
             )
         else:
             metrics = [("last", last_valid_metrics)]
@@ -968,7 +970,9 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
         Returns:
             updated metrics
         """
-        n_last_checkpoints = [(Path(filepath).stem, batch_values) for (filepath, batch_values) in self.last_checkpoints]
+        n_last_checkpoints = [
+            (Path(filepath).stem, batch_values) for (filepath, batch_values) in self.last_checkpoints
+        ]
         all_epochs_metrics = [
             (f"epoch_{order_index}", valid_metric) for (order_index, valid_metric) in enumerate(self.metrics_history)
         ]
