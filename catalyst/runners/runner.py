@@ -1,25 +1,11 @@
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Generator, List, Mapping, Union
+from typing import Any, Callable, Dict, List, Mapping, Union
 
-import torch
-from torch.jit import ScriptModule
-from torch.utils.data import DataLoader, Dataset
-
-from catalyst.callbacks.checkpoint import CheckpointCallback
 from catalyst.core.callback import Callback
-from catalyst.core.functional import sort_callbacks_by_order
 from catalyst.core.runner import IStageBasedRunner
 from catalyst.experiments.experiment import Experiment
-from catalyst.typing import Criterion, Device, Model, Optimizer, Scheduler
-from catalyst.utils.checkpoint import load_checkpoint, unpack_checkpoint
-from catalyst.utils.components import process_components
-from catalyst.utils.misc import maybe_recursive_call
-from catalyst.utils.seed import set_global_seed
-from catalyst.utils.torch import (
-    get_device,
-    get_requires_grad,
-    set_requires_grad,
-)
+from catalyst.typing import Criterion, Model, Optimizer, Scheduler
+from torch.utils.data import DataLoader, Dataset
 
 
 class Runner(IStageBasedRunner):
@@ -43,7 +29,6 @@ class Runner(IStageBasedRunner):
         loaders: "OrderedDict[str, DataLoader]" = None,
         callbacks: "Union[List[Callback], OrderedDict[str, Callback]]" = None,
         logdir: str = None,
-        resume: str = None,
         num_epochs: int = 1,
         valid_loader: str = "valid",
         main_metric: str = "loss",
@@ -53,9 +38,7 @@ class Runner(IStageBasedRunner):
         checkpoint_data: Dict = None,
         fp16: Union[Dict, bool] = None,
         distributed: bool = False,
-        check: bool = False,
         timeit: bool = False,
-        load_best_on_end: bool = False,
         initial_seed: int = 42,
         state_kwargs: Dict = None,
     ) -> None:
@@ -106,9 +89,6 @@ class Runner(IStageBasedRunner):
                 ``BatchOverfitCallback``
             timeit: if True, computes the execution time
                 of training process and displays it to the console.
-            load_best_on_end: if True, Runner will load
-                best checkpoint state (model, optimizer, etc)
-                according to validation metrics. Requires specified ``logdir``.
             initial_seed: experiment's initial seed value
             state_kwargs: deprecated, use `stage_kwargs` instead
 
@@ -117,24 +97,6 @@ class Runner(IStageBasedRunner):
                 already exist
         """
         assert state_kwargs is None or stage_kwargs is None
-
-        if isinstance(fp16, bool) and fp16:
-            fp16 = {"opt_level": "O1"}
-
-        if resume is not None or load_best_on_end:
-            load_on_stage_end = None
-            if load_best_on_end:
-                load_on_stage_end = "best_full"
-                assert logdir is not None, "For ``load_best_on_end`` feature " "you need to specify ``logdir``"
-            callbacks = sort_callbacks_by_order(callbacks)
-            checkpoint_callback_flag = any(isinstance(x, CheckpointCallback) for x in callbacks.values())
-            if not checkpoint_callback_flag:
-                callbacks["_loader"] = CheckpointCallback(
-                    resume=resume,
-                    load_on_stage_end=load_on_stage_end,
-                )
-            else:
-                raise NotImplementedError("CheckpointCallback already exist")
 
         experiment = self._experiment_fn(
             stage="train",
@@ -152,7 +114,6 @@ class Runner(IStageBasedRunner):
             minimize_metric=minimize_metric,
             verbose=verbose,
             check_time=timeit,
-            check_run=check,
             stage_kwargs=stage_kwargs or state_kwargs,
             checkpoint_data=checkpoint_data,
             distributed_params=fp16,
