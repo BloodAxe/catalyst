@@ -1,3 +1,4 @@
+import collections
 import os
 import shutil
 from collections import OrderedDict
@@ -117,7 +118,7 @@ def save_checkpoint(
     return filename
 
 
-def load_checkpoint(filepath: str):
+def load_checkpoint(filepath: str) -> collections.OrderedDict:
     """Load checkpoint from path.
 
     Args:
@@ -126,7 +127,7 @@ def load_checkpoint(filepath: str):
     Returns:
         checkpoint content
     """
-    checkpoint = torch.load(filepath, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(filepath, map_location="cpu")
     return checkpoint
 
 

@@ -1,11 +1,12 @@
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Mapping, Union
 
+from torch.utils.data import DataLoader, Dataset
+
 from catalyst.core.callback import Callback
 from catalyst.core.runner import IStageBasedRunner
 from catalyst.experiments.experiment import Experiment
 from catalyst.typing import Criterion, Model, Optimizer, Scheduler
-from torch.utils.data import DataLoader, Dataset
 
 
 class Runner(IStageBasedRunner):

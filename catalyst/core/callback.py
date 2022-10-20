@@ -1,5 +1,4 @@
 from enum import IntFlag
-from typing import TYPE_CHECKING
 
 
 class CallbackNode(IntFlag):

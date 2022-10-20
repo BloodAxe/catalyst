@@ -6,29 +6,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import Tensor
 from catalyst.core import Callback, CallbackOrder, IRunner, CallbackNode
-from catalyst.callbacks import TensorboardLogger
+from catalyst.utils import get_tensorboard_logger
 from pytorch_toolbelt.utils import render_figure_to_tensor, image_to_tensor, to_numpy, rgb_image_from_tensor
 from pytorch_toolbelt.utils.distributed import all_gather
-from torch.utils.tensorboard import SummaryWriter
-
+from torch import Tensor
 
 __all__ = [
-    "get_tensorboard_logger",
     "ShowPolarBatchesCallback",
     "ShowEmbeddingsCallback",
     "UMAPCallback",
     "draw_binary_segmentation_predictions",
     "draw_semantic_segmentation_predictions",
 ]
-
-
-def get_tensorboard_logger(runner: IRunner, tensorboard_callback_name: str = "_tensorboard") -> SummaryWriter:
-    tb_callback: TensorboardLogger = runner.callbacks[tensorboard_callback_name]
-    if runner.loader_name not in tb_callback.loggers:
-        raise RuntimeError(f"Cannot find Tensorboard logger for loader {runner.loader_name}")
-    return tb_callback.loggers[runner.loader_name]
 
 
 class ShowPolarBatchesCallback(Callback):

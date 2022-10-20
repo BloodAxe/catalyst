@@ -1,20 +1,12 @@
 from typing import Dict, Union
-import torch
-from catalyst.core import IRunner, Callback, CallbackOrder, CallbackNode
-from typing import Dict, Union
 
-import torch
-
+from catalyst.core import CallbackNode
 from catalyst.core import IRunner, Callback, CallbackOrder
+from catalyst.utils import get_tensorboard_logger
 
 __all__ = [
     "HyperParametersCallback",
-    "clean_checkpoint",
-    "report_checkpoint",
-    "sanitize_metric_name",
 ]
-
-from pytorch_toolbelt.utils.catalyst import get_tensorboard_logger
 
 
 class HyperParametersCallback(Callback):

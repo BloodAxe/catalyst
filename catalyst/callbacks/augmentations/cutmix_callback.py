@@ -1,12 +1,12 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 
 import numpy as np
 import torch
 
 from catalyst.callbacks.criterion import CriterionCallback
-
-
 from catalyst.core.runner import IRunner
+
+__all__ = ["CutmixCallback"]
 
 
 class CutmixCallback(CriterionCallback):
@@ -126,6 +126,3 @@ class CutmixCallback(CriterionCallback):
             * (bby2 - bby1)
             / (runner.input[self.fields[0]].shape[-1] * runner.input[self.fields[0]].shape[-2])
         )
-
-
-__all__ = ["CutmixCallback"]

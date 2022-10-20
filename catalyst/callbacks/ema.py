@@ -1,5 +1,6 @@
 import torch
 from torch import Tensor
+
 from catalyst.core import IRunner, Callback, CallbackOrder
 
 __all__ = ["ExponentialMovingAverage", "EMABatchCallback", "EMAEpochCallback"]

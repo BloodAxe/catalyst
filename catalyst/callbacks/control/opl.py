@@ -1,6 +1,6 @@
 import numpy as np
-from catalyst.core import Callback, CallbackOrder, IRunner
 
+from catalyst.core import Callback, CallbackOrder, IRunner
 
 __all__ = ["MulticlassOnlinePseudolabelingCallback", "BCEOnlinePseudolabelingCallback", "PseudolabelDatasetMixin"]
 

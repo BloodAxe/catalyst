@@ -1,18 +1,24 @@
 import logging
 import os
 import sys
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List
 
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from catalyst.callbacks.formatters import TxtMetricsFormatter
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
+from catalyst.core.runner import IRunner
 from catalyst.utils.dict import split_dict_to_subdicts
 from catalyst.utils.misc import is_exception
+from catalyst.callbacks.formatters import TxtMetricsFormatter
 
 
-from catalyst.core.runner import IRunner
+__all__ = [
+    "ILoggerCallback",
+    "ConsoleLogger",
+    "TensorboardLogger",
+    "VerboseLogger",
+]
 
 
 class ILoggerCallback(Callback):
@@ -264,11 +270,3 @@ class TensorboardLogger(ILoggerCallback):
 
         for logger in self.loggers.values():
             logger.close()
-
-
-__all__ = [
-    "ILoggerCallback",
-    "ConsoleLogger",
-    "TensorboardLogger",
-    "VerboseLogger",
-]

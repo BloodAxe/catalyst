@@ -1,12 +1,10 @@
 import copy
 from collections import OrderedDict
-from typing import Mapping, TYPE_CHECKING
+from typing import Mapping
 
 from torch.utils.data import DataLoader
 
 from catalyst.core.callback import Callback, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
 
 

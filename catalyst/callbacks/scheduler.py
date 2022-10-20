@@ -3,6 +3,8 @@ import torch
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.core.runner import IRunner
 
+__all__ = ["ISchedulerCallback", "SchedulerCallback"]
+
 
 class ISchedulerCallback(Callback):
     """Scheduler callback interface, abstraction over scheduler step."""
@@ -166,6 +168,3 @@ class SchedulerCallback(ISchedulerCallback):
         """
         if self.mode == "epoch":
             self.step_epoch(runner=runner)
-
-
-__all__ = ["ISchedulerCallback", "SchedulerCallback"]

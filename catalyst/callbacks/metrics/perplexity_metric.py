@@ -1,12 +1,12 @@
 import math
 
 import torch
-from catalyst.core import CallbackOrder, CallbackNode
-from catalyst.utils import get_dictkey_auto_fn
+from pytorch_toolbelt.utils.distributed import all_gather
 from torch import nn
 
 from catalyst.core import Callback
-from pytorch_toolbelt.utils.distributed import all_gather
+from catalyst.core import CallbackOrder, CallbackNode
+from catalyst.utils import get_dictkey_auto_fn
 
 
 class PerplexityMetricCallback(Callback):

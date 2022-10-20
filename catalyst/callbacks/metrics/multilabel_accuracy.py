@@ -1,11 +1,12 @@
-from typing import Optional, Callable, Union
+from typing import Callable, Union
 
 import numpy as np
 import torch
-from catalyst.core import Callback, CallbackOrder, IRunner
-from catalyst.utils import get_dictkey_auto_fn
 from pytorch_toolbelt.utils import all_gather
 from torch import Tensor
+
+from catalyst.core import Callback, CallbackOrder, IRunner
+from catalyst.utils import get_dictkey_auto_fn
 
 
 class MultilabelAccuracyMetricCallback(Callback):

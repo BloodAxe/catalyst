@@ -1,6 +1,7 @@
 # Framework must-haves
 torch>=1.12.0
 hydra-core>=1.2
+pytorch-toolbelt>=0.5
 
 numpy
 tqdm

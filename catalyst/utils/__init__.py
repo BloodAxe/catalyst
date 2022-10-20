@@ -77,3 +77,4 @@ from catalyst.utils.torch import (
     detach,
     trim_tensors,
 )
+from catalyst.utils.loggers import get_tensorboard_logger

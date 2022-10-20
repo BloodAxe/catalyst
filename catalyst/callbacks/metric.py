@@ -7,12 +7,10 @@ import numpy as np
 import torch
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
+from catalyst.core.runner import IRunner
 from catalyst.utils.averagevaluemeter import AverageValueMeter
 from catalyst.utils.dict import get_dictkey_auto_fn
 from catalyst.utils.distributed import get_distributed_mean
-
-
-from catalyst.core.runner import IRunner
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,9 @@
 from collections import defaultdict
-from typing import TYPE_CHECKING
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
+
+__all__ = ["ValidationManagerCallback"]
 
 
 class ValidationManagerCallback(Callback):
@@ -57,6 +56,3 @@ class ValidationManagerCallback(Callback):
         if is_best:
             runner.is_best_valid = True
             runner.best_valid_metrics = runner.valid_metrics.copy()
-
-
-__all__ = ["ValidationManagerCallback"]

@@ -3,9 +3,10 @@ from typing import Dict, List
 import numpy as np
 import torch
 import torch.distributed  # noqa: WPS301
+from sklearn.metrics import confusion_matrix as confusion_matrix_fn
+
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.core.runner import IRunner
-from sklearn.metrics import confusion_matrix as confusion_matrix_fn
 
 
 class ConfusionMatrixCallback(Callback):

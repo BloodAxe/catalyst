@@ -1,5 +1,5 @@
 from math import ceil
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List
 
 import numpy as np
 import torch
@@ -13,8 +13,6 @@ from sklearn.metrics import (
 from sklearn.neighbors import NearestNeighbors
 
 from catalyst.core.callback import Callback, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
 
 

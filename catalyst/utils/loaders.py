@@ -2,8 +2,9 @@ import warnings
 from copy import copy
 from typing import Dict, Union
 
-from catalyst.utils.distributed import get_rank
 from torch.utils.data import DataLoader, DistributedSampler
+
+from catalyst.utils.distributed import get_rank
 
 
 def get_native_batch_from_loader(loader: DataLoader, batch_index: int = 0):

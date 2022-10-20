@@ -1,10 +1,8 @@
-from typing import TYPE_CHECKING
-
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
+from catalyst.core.runner import IRunner
 from catalyst.tools.time_manager import TimeManager
 
-
-from catalyst.core.runner import IRunner
+__all__ = ["TimerCallback"]
 
 
 class TimerCallback(Callback):
@@ -59,6 +57,3 @@ class TimerCallback(Callback):
         self.timer.reset()
         self.timer.start("_timer/batch_time")
         self.timer.start("_timer/data_time")
-
-
-__all__ = ["TimerCallback"]

@@ -7,7 +7,6 @@ from typing import (
     List,
     Mapping,
     Tuple,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -24,6 +23,7 @@ from catalyst.callbacks.logging import (
 from catalyst.callbacks.metric import MetricManagerCallback
 from catalyst.callbacks.timer import TimerCallback
 from catalyst.callbacks.validation import ValidationManagerCallback
+from catalyst.core.callback import Callback
 from catalyst.core.experiment import IExperiment
 from catalyst.core.functional import (
     check_callback_isinstance,
@@ -31,9 +31,6 @@ from catalyst.core.functional import (
 )
 from catalyst.settings import SETTINGS
 from catalyst.typing import Criterion, Model, Optimizer, Scheduler
-
-
-from catalyst.core.callback import Callback
 
 
 class Experiment(IExperiment):

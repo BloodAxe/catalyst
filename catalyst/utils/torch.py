@@ -10,7 +10,7 @@ import torch.backends
 from torch import nn, Tensor
 from torch.backends import cudnn
 
-from catalyst.typing import Device, Model, Optimizer
+from catalyst.typing import Device, Model
 from catalyst.utils.dict import merge_dicts
 
 

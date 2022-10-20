@@ -2,10 +2,11 @@ from typing import Callable, List, Optional
 
 import numpy as np
 import torch
-from catalyst.callbacks.visualization import get_tensorboard_logger
-from catalyst.core import Callback, CallbackOrder, IRunner
 from pytorch_toolbelt.utils import is_main_process, all_gather, plot_confusion_matrix, render_figure_to_tensor
 from torch import Tensor
+
+from catalyst.callbacks.visualization import get_tensorboard_logger
+from catalyst.core import Callback, CallbackOrder, IRunner
 
 
 class ConfusionMatrixCallback(Callback):

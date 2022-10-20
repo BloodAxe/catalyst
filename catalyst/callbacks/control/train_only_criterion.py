@@ -1,6 +1,7 @@
 import torch
+
+from catalyst.callbacks.criterion import CriterionCallback
 from catalyst.core import IRunner
-from catalyst.callbacks import CriterionCallback
 
 __all__ = ["TrainOnlyCriterionCallback"]
 
@@ -10,4 +11,4 @@ class TrainOnlyCriterionCallback(CriterionCallback):
         if runner.is_train_loader:
             return super(TrainOnlyCriterionCallback, self).on_batch_end(runner)
         else:
-            runner.batch_metrics[self.prefix] = torch.tensor(0, device="cuda")
+            runner.batch_metrics[self.prefix] = torch.tensor(0, device=runner.device)

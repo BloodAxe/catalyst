@@ -2,10 +2,11 @@ from typing import Callable, Optional
 
 import numpy as np
 import torch
-from catalyst.core import Callback, CallbackOrder
-from catalyst.utils import get_dictkey_auto_fn
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
+
+from catalyst.core import Callback, CallbackOrder
+from catalyst.utils import get_dictkey_auto_fn
 
 __all__ = ["RocAucMetricCallback"]
 

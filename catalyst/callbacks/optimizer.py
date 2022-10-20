@@ -1,18 +1,15 @@
-import logging
 import warnings
-import torch
-
 from typing import Callable, Dict, Mapping
+
+import torch
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
+from catalyst.core.runner import IRunner
 from catalyst.typing import Optimizer
+from catalyst.utils import get_param_group_params
 from torch import nn
 from torch.distributed.optim import ZeroRedundancyOptimizer
 
-
-from catalyst.core.runner import IRunner
-from catalyst.utils import get_param_group_params
-
-logger = logging.getLogger(__name__)
+__all__ = ["IOptimizerCallback", "AMPOptimizerCallback", "OptimizerCallback", "OptimizerLoggerCallback"]
 
 
 def grad_norm(model: nn.Module, prefix: str, norm_type: int) -> Dict[str, float]:
@@ -376,6 +373,3 @@ class OptimizerLoggerCallback(Callback):
 
             if pg_params.momentum is not None:
                 runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
-
-
-__all__ = ["IOptimizerCallback", "AMPOptimizerCallback", "OptimizerCallback", "OptimizerLoggerCallback"]

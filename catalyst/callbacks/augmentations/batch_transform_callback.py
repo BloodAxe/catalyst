@@ -4,9 +4,9 @@ import torch
 from torch import nn
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
+
+__all__ = ["BatchTransformCallback"]
 
 
 class BatchTransformCallback(Callback):
@@ -198,6 +198,3 @@ class BatchTransformCallback(Callback):
         in_batch = self._process_input(runner.input)
         out_batch = self.transform(in_batch)
         self._process_output(runner, out_batch)
-
-
-__all__ = ["BatchTransformCallback"]

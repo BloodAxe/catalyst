@@ -1,7 +1,8 @@
 from typing import Optional, Callable
 
-from catalyst.core import Callback
 from torch import Tensor
+
+from catalyst.core import Callback
 
 
 class F1ScoreCallback(Callback):

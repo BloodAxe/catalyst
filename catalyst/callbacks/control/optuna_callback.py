@@ -1,10 +1,6 @@
-from typing import TYPE_CHECKING
-
 import optuna
 
 from catalyst.core.callback import Callback, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
 
 

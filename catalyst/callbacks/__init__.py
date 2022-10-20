@@ -1,44 +1,21 @@
 # flake8: noqa
 
-from catalyst.callbacks.checkpoint import (
-    ICheckpointCallback,
-    BaseCheckpointCallback,
-    CheckpointCallback,
-    IterationCheckpointCallback,
-)
-from catalyst.callbacks.control.control_flow import ControlFlowCallback
-from catalyst.callbacks.criterion import CriterionCallback
-from catalyst.callbacks.control.early_stopping import (
-    EarlyStoppingCallback,
-)
-from catalyst.callbacks.exception import ExceptionCallback
-from catalyst.callbacks.logging import (
-    ILoggerCallback,
-    VerboseLogger,
-    ConsoleLogger,
-    TensorboardLogger,
-)
-from catalyst.callbacks.metric import (
-    IMetricCallback,
-    IBatchMetricCallback,
-    ILoaderMetricCallback,
-    BatchMetricCallback,
-    LoaderMetricCallback,
-    MetricCallback,
-    MetricAggregationCallback,
-    MetricManagerCallback,
-)
-from catalyst.callbacks.optimizer import (
-    IOptimizerCallback,
-    OptimizerCallback,
-    AMPOptimizerCallback,
-    OptimizerLoggerCallback,
-)
-from catalyst.callbacks.scheduler import (
-    ISchedulerCallback,
-    SchedulerCallback,
-)
-from catalyst.callbacks.timer import TimerCallback
-from catalyst.callbacks.validation import ValidationManagerCallback
+from catalyst.callbacks.augmentations import *
+from catalyst.callbacks.control import *
+from catalyst.callbacks.metrics import *
 
-from catalyst.callbacks.ema import EMABatchCallback, EMAEpochCallback
+from catalyst.callbacks.checkpoint import *
+from catalyst.callbacks.criterion import *
+from catalyst.callbacks.ema import *
+from catalyst.callbacks.exception import *
+from catalyst.callbacks.formatters import *
+from catalyst.callbacks.hyperparameters import *
+from catalyst.callbacks.logging import *
+from catalyst.callbacks.metric import *
+from catalyst.callbacks.metrics import *
+from catalyst.callbacks.optimizer import *
+from catalyst.callbacks.scheduler import *
+from catalyst.callbacks.timer import *
+from catalyst.callbacks.tsa_callback import *
+from catalyst.callbacks.validation import *
+from catalyst.callbacks.visualization import *

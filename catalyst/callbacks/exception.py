@@ -1,10 +1,6 @@
-from typing import TYPE_CHECKING
-
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-from catalyst.utils.misc import is_exception
-
-
 from catalyst.core.runner import IRunner
+from catalyst.utils.misc import is_exception
 
 
 class ExceptionCallback(Callback):

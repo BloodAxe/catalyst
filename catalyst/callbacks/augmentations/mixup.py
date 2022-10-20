@@ -2,8 +2,9 @@ from typing import List
 
 import numpy as np
 import torch
+
+from catalyst.callbacks.criterion import CriterionCallback
 from catalyst.core import IRunner, Callback, CallbackOrder
-from catalyst.callbacks import CriterionCallback
 
 __all__ = ["MixupInputCallback", "MixupCriterionCallback"]
 

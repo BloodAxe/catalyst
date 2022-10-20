@@ -1,7 +1,5 @@
 import os
 import random
-import socket
-import subprocess
 from collections import OrderedDict
 from typing import Union
 
@@ -10,7 +8,6 @@ import torch.distributed
 from packaging.version import parse, Version
 from torch import nn
 
-from catalyst.utils.misc import get_fn_default_params
 from catalyst.utils.torch import get_available_gpus
 
 

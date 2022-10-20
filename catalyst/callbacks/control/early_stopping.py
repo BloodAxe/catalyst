@@ -2,8 +2,6 @@ from collections import defaultdict
 from typing import Union, Iterable
 
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
-
-
 from catalyst.core.runner import IRunner
 
 
