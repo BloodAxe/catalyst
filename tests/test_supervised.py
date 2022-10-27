@@ -4,7 +4,6 @@ import torch
 
 from catalyst.callbacks import (
     CheckpointCallback,
-    CheckRunCallback,
     ConsoleLogger,
     CriterionCallback,
     ExceptionCallback,

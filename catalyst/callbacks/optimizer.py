@@ -8,10 +8,36 @@ from catalyst.typing import Optimizer
 from catalyst.utils import get_param_group_params
 from torch import nn
 from torch.distributed.optim import ZeroRedundancyOptimizer
+from pytorch_toolbelt.optimization.functional import get_named_optimizable_parameters
 
 __all__ = ["IOptimizerCallback", "AMPOptimizerCallback", "OptimizerCallback", "OptimizerLoggerCallback"]
 
 
+@torch.no_grad()
+def update_to_weight_ratio(model: nn.Module, optimizer: Optimizer, prefix: str) -> Dict[str, float]:
+    """
+    Compute update to weight ratio to check whether model is training fast enough
+
+    https://youtube.com/clip/Ugkxcu_JuwxoO72Z8z-CLmTlCaRwUAGjjI43
+
+    :param model:
+    :param optimizer:
+    :param prefix:
+    :return:
+    """
+    param_to_name = dict((v, k) for k, v in get_named_optimizable_parameters(model))
+    update_to_value_dict = {}
+    for pg in optimizer.param_groups:
+        lr = pg.get("lr", optimizer.defaults["lr"])  # Get LR for given param group
+        for p in pg["params"]:
+            parameter_name = param_to_name[p]
+            update_to_value_ratio = (lr * p.grad.std() / p.data.std()).log10().item()
+            metrics_tag = f"{prefix}/{parameter_name}"
+            update_to_value_dict[metrics_tag] = update_to_value_ratio
+    return update_to_value_dict
+
+
+@torch.no_grad()
 def grad_norm(model: nn.Module, prefix: str, norm_type: int) -> Dict[str, float]:
     """Computes gradient norms for a given model.
 
@@ -65,6 +91,7 @@ class OptimizerCallback(IOptimizerCallback):
         log_grad_norm: bool = False,
         grad_norm_type: int = 2,
         grad_norm_prefix: str = "_grad_norm",
+        update_to_weight_prefix: str = "_update_to_weight",
     ):
         """
         Args:
@@ -95,8 +122,11 @@ class OptimizerCallback(IOptimizerCallback):
         self._optimizer_step_fn: Callable = None
 
         self.log_grad_norm = log_grad_norm
+
         self.grad_norm_prefix = grad_norm_prefix
         self.grad_norm_type = grad_norm_type
+
+        self.update_to_weight_prefix = update_to_weight_prefix
 
     def _optimizer_step(self, optimizer: Optimizer) -> None:
         """CPU and GPU optimization step.
@@ -129,6 +159,9 @@ class OptimizerCallback(IOptimizerCallback):
         if self.log_grad_norm:
             grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
             runner.batch_metrics.update(**grad_norm_dict)
+
+            update_to_weight_dict = update_to_weight_ratio(runner.model, optimizer, self.update_to_weight_prefix)
+            runner.batch_metrics.update(**update_to_weight_dict)
 
         # Step
         # optimize parameters
@@ -200,6 +233,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         log_grad_norm: bool = False,
         grad_norm_type: int = 2,
         grad_norm_prefix: str = "_grad_norm",
+        update_to_weight_prefix: str = "_update_to_weight",
     ):
         """
         Args:
@@ -232,6 +266,8 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.grad_norm_type = grad_norm_type
         self.grad_norm_prefix = grad_norm_prefix
 
+        self.update_to_weight_prefix = update_to_weight_prefix
+
     def grad_step(
         self,
         runner,
@@ -258,6 +294,9 @@ class AMPOptimizerCallback(IOptimizerCallback):
             if self.log_grad_norm:
                 grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
                 runner.batch_metrics.update(**grad_norm_dict)
+
+                update_to_weight_dict = update_to_weight_ratio(runner.model, optimizer, self.update_to_weight_prefix)
+                runner.batch_metrics.update(**update_to_weight_dict)
 
         self.scaler.step(optimizer)
         self.scaler.update()
