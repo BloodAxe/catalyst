@@ -33,6 +33,7 @@ from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.seed import set_global_seed
 from catalyst.utils.torch import any2device
 
+from pytorch_toolbelt.utils.distributed import get_rank
 
 class RunnerException(Exception):
     """Exception class for all runner errors."""
@@ -851,7 +852,7 @@ class IRunner(ABC, FrozenClass):
             if isinstance(loader.sampler, DistributedSampler) and not self.is_infer_stage:
                 loader.sampler.set_epoch(self.epoch)
 
-            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1)
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
             self._run_event("on_loader_start")
             with torch.set_grad_enabled(self.is_train_loader):
                 self._run_loader(loader)
@@ -871,7 +872,7 @@ class IRunner(ABC, FrozenClass):
 
         self._run_event("on_stage_start")
         while self.epoch < self.num_epochs + 1:
-            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1)
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
             self._run_event("on_epoch_start")
             self._run_epoch(stage=stage, epoch=self.epoch)
             self._run_event("on_epoch_end")
