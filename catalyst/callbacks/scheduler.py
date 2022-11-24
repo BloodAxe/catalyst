@@ -10,6 +10,10 @@ class ISchedulerCallback(Callback):
     """Scheduler callback interface, abstraction over scheduler step."""
 
     pass
+    
+    @property
+    def has_finite_number_of_epochs(self) -> bool:
+        raise NotImplementedError()
 
 
 class SchedulerCallback(ISchedulerCallback):
