@@ -18,7 +18,6 @@ Device = Union[str, torch.device]
 RunnerModel = Union[Model, Dict[str, Model]]
 RunnerCriterion = Union[Criterion, Dict[str, Criterion]]
 RunnerOptimizer = Union[Optimizer, Dict[str, Optimizer]]
-RunnerScheduler = Union[Scheduler, Dict[str, Scheduler]]
 
 __all__ = [
     "Model",
@@ -30,5 +29,4 @@ __all__ = [
     "RunnerModel",
     "RunnerCriterion",
     "RunnerOptimizer",
-    "RunnerScheduler",
 ]

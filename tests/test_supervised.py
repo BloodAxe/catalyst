@@ -9,7 +9,6 @@ from catalyst.callbacks import (
     ExceptionCallback,
     MetricManagerCallback,
     OptimizerCallback,
-    SchedulerCallback,
     TensorboardLogger,
     TimerCallback,
     ValidationManagerCallback,
@@ -181,7 +180,6 @@ def test_optimizer():
         loaders=loaders,
         criterion=criterion,
         optimizer=optimizer,
-        scheduler=scheduler,
         valid_loader="train",
         logdir="./logs",
     )
@@ -200,7 +198,6 @@ def test_scheduler():
             ("_tensorboard", TensorboardLogger),
             ("_exception", ExceptionCallback),
             ("_optimizer", OptimizerCallback),
-            ("_scheduler", SchedulerCallback),
         ]
     )
 
@@ -216,7 +213,6 @@ def test_scheduler():
         model=model,
         loaders=loaders,
         optimizer=optimizer,
-        scheduler=scheduler,
         valid_loader="train",
         logdir="./logs",
         check_time=True,
@@ -236,14 +232,12 @@ def test_all():
             ("_exception", ExceptionCallback),
             ("_criterion", CriterionCallback),
             ("_optimizer", OptimizerCallback),
-            ("_scheduler", SchedulerCallback),
         ]
     )
 
     model = torch.nn.Linear(10, 10)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters())
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10)
     dataset = torch.utils.data.Dataset()
     dataloader = torch.utils.data.DataLoader(dataset)
     loaders = OrderedDict()
@@ -254,9 +248,7 @@ def test_all():
         loaders=loaders,
         criterion=criterion,
         optimizer=optimizer,
-        scheduler=scheduler,
         verbose=True,
-        check_run=True,
         valid_loader="train",
     )
     _test_callbacks(test_callbacks, exp)
@@ -280,7 +272,6 @@ def test_infer_defaults():
         loaders=loaders,
         criterion=criterion,
         optimizer=optimizer,
-        scheduler=scheduler,
         stage="infer",
     )
     _test_callbacks(test_callbacks, exp, "infer")
@@ -310,7 +301,6 @@ def test_infer_all():
         loaders=loaders,
         criterion=criterion,
         optimizer=optimizer,
-        scheduler=scheduler,
         verbose=True,
         check_run=True,
         stage="infer",

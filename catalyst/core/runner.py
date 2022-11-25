@@ -23,7 +23,6 @@ from catalyst.typing import (
     RunnerCriterion,
     RunnerModel,
     RunnerOptimizer,
-    RunnerScheduler,
     Scheduler,
 )
 from catalyst.utils.components import process_components
@@ -34,6 +33,7 @@ from catalyst.utils.seed import set_global_seed
 from catalyst.utils.torch import any2device
 
 from pytorch_toolbelt.utils.distributed import get_rank
+
 
 class RunnerException(Exception):
     """Exception class for all runner errors."""
@@ -387,7 +387,6 @@ class IRunner(ABC, FrozenClass):
         model: RunnerModel = None,
         criterion: RunnerCriterion = None,
         optimizer: RunnerOptimizer = None,
-        scheduler: RunnerScheduler = None,
         callbacks: Dict[str, "Callback"] = None,
         loaders: Dict[str, DataLoader] = None,
         logdir: str = None,
@@ -410,7 +409,6 @@ class IRunner(ABC, FrozenClass):
         # use `catalyst.core.IExperiment` to setup them
         self.criterion: RunnerCriterion = criterion
         self.optimizer: RunnerOptimizer = optimizer
-        self.scheduler: RunnerScheduler = scheduler
         # and callbacks
         self.callbacks: Dict[str, "Callback"] = callbacks or {}
 
@@ -454,6 +452,7 @@ class IRunner(ABC, FrozenClass):
         # experiment info
         self.global_sample_step: int = 0
         self.global_batch_step: int = 0
+        self.global_optimizer_step: int = 0
         self.global_epoch: int = 1
         self.verbose: bool = verbose
         self.is_check_run: bool = is_check_run
@@ -462,7 +461,9 @@ class IRunner(ABC, FrozenClass):
         # stage info
         self.num_epochs: int = num_epochs
         self.stage_name: str = stage
-        self.is_infer_stage: bool = self.stage_name.startswith(SETTINGS.stage_infer_prefix)
+        self.is_infer_stage: bool = self.stage_name.startswith(
+            SETTINGS.stage_infer_prefix
+        )
         # epoch info
         self.epoch: int = 1
         # loader info
@@ -561,17 +562,23 @@ class IRunner(ABC, FrozenClass):
         elif isinstance(value, type(None)):
             self._device = None
         else:
-            raise TypeError(f"Invalid value type " f"must be `str` or `torch.device` " f"got '{type(value)}'")
+            raise TypeError(
+                f"Invalid value type "
+                f"must be `str` or `torch.device` "
+                f"got '{type(value)}'"
+            )
 
         if self._model is not None:
-            self._model = maybe_recursive_call(self._model, "to", device=self._device or "cpu")
+            self._model = maybe_recursive_call(
+                self._model, "to", device=self._device or "cpu"
+            )
 
     @staticmethod
     def _get_experiment_components(
         experiment: IExperiment,
         stage: str = None,
         device: Device = None,
-    ) -> Tuple[Model, Criterion, Optimizer, Scheduler, Device]:
+    ) -> Tuple[Model, Criterion, Optimizer, Device]:
         """
         Inner method for `Experiment` components preparation.
 
@@ -589,16 +596,14 @@ class IRunner(ABC, FrozenClass):
         model = experiment.get_model(stage)
         criterion = experiment.get_criterion(stage)
         optimizer = experiment.get_optimizer(stage, model)
-        scheduler = experiment.get_scheduler(stage, optimizer)
-        model, criterion, optimizer, scheduler, device = process_components(
+        model, criterion, optimizer, device = process_components(
             model=model,
             criterion=criterion,
             optimizer=optimizer,
-            scheduler=scheduler,
             distributed_params=experiment.distributed_params,
             device=device,
         )
-        return model, criterion, optimizer, scheduler, device
+        return model, criterion, optimizer, device
 
     @staticmethod
     def _get_experiment_callbacks(
@@ -781,7 +786,9 @@ class IRunner(ABC, FrozenClass):
             raise RunnerException(f"DataLoader with name {self.loader_name} is empty.")
 
         self.loader_batch_size = (
-            loader.batch_sampler.batch_size if loader.batch_sampler is not None else loader.batch_size
+            loader.batch_sampler.batch_size
+            if loader.batch_sampler is not None
+            else loader.batch_size
         )
 
         self.loader_sample_step = 0
@@ -792,6 +799,7 @@ class IRunner(ABC, FrozenClass):
             if self.need_early_stop:
                 self.need_early_stop = False
                 break
+    
 
     def _run_epoch(self, stage: str, epoch: int) -> None:
         """
@@ -813,7 +821,8 @@ class IRunner(ABC, FrozenClass):
         self.is_infer_stage = self.stage_name.startswith("infer")
         if not self.is_infer_stage:
             assert self.valid_loader in self.loaders.keys(), (
-                f"'{self.valid_loader}' " f"should be in provided loaders: {list(self.loaders.keys())}"
+                f"'{self.valid_loader}' "
+                f"should be in provided loaders: {list(self.loaders.keys())}"
             )
         else:
             assert not any(
@@ -849,10 +858,15 @@ class IRunner(ABC, FrozenClass):
             else:
                 raise ValueError()
 
-            if isinstance(loader.sampler, DistributedSampler) and not self.is_infer_stage:
+            if (
+                isinstance(loader.sampler, DistributedSampler)
+                and not self.is_infer_stage
+            ):
                 loader.sampler.set_epoch(self.epoch)
 
-            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
+            set_global_seed(
+                self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
+            )
             self._run_event("on_loader_start")
             with torch.set_grad_enabled(self.is_train_loader):
                 self._run_loader(loader)
@@ -872,7 +886,9 @@ class IRunner(ABC, FrozenClass):
 
         self._run_event("on_stage_start")
         while self.epoch < self.num_epochs + 1:
-            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
+            set_global_seed(
+                self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
+            )
             self._run_event("on_epoch_start")
             self._run_epoch(stage=stage, epoch=self.epoch)
             self._run_event("on_epoch_end")
@@ -912,7 +928,8 @@ class IRunner(ABC, FrozenClass):
 
             def _exception_handler_check(callbacks: Union[OrderedDict, Dict]):
                 return callbacks is not None and any(
-                    issubclass(x.__class__, ExceptionCallback) for x in callbacks.values()
+                    issubclass(x.__class__, ExceptionCallback)
+                    for x in callbacks.values()
                 )
 
             if _exception_handler_check(getattr(self, "callbacks", None)):
@@ -953,15 +970,20 @@ class IStageBasedRunner(IRunner):
             model,
             criterion,
             optimizer,
-            scheduler,
             device,
-        ) = self._get_experiment_components(experiment=self.experiment, stage=stage, device=self.device)
+        ) = self._get_experiment_components(
+            experiment=self.experiment, stage=stage, device=self.device
+        )
 
         set_global_seed(self.experiment.initial_seed)
-        callbacks = self._get_experiment_callbacks(experiment=self.experiment, stage=stage)
+        callbacks = self._get_experiment_callbacks(
+            experiment=self.experiment, stage=stage
+        )
 
         migrating_params = dict(**self.experiment.get_stage_params(stage))
-        migrate_from_previous_stage = migrating_params.get("migrate_from_previous_stage", True)
+        migrate_from_previous_stage = migrating_params.get(
+            "migrate_from_previous_stage", True
+        )
         if migrate_from_previous_stage and getattr(self, "callbacks", None) is not None:
             for key, value in self.callbacks.items():
                 if value.scope == CallbackScope.experiment:
@@ -985,7 +1007,6 @@ class IStageBasedRunner(IRunner):
             device=device,
             criterion=criterion,
             optimizer=optimizer,
-            scheduler=scheduler,
             callbacks=callbacks,
             loaders=getattr(self, "loaders", None),
             **migrating_params,

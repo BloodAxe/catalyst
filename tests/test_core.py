@@ -59,6 +59,5 @@ def test_defaults():
     assert exp.get_model("") == model
     assert exp.get_criterion("") is None
     assert exp.get_optimizer("", model) is None
-    assert exp.get_scheduler("") is None
     _test_callbacks(test_callbacks, exp)
     assert exp.get_loaders("") == loaders

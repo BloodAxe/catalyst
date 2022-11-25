@@ -5,7 +5,7 @@ import torch
 import torch.distributed
 from torch import nn
 
-from catalyst.typing import Criterion, Device, Model, Optimizer, Scheduler
+from catalyst.typing import Criterion, Device, Model, Optimizer
 from catalyst.utils.distributed import (
     check_amp_available,
     check_ddp_wrapped,
@@ -20,28 +20,26 @@ def process_components(
     model: Model,
     criterion: Criterion = None,
     optimizer: Optimizer = None,
-    scheduler: Scheduler = None,
     distributed_params: Dict = None,
     device: Device = None,
-) -> Tuple[Model, Criterion, Optimizer, Scheduler, Device]:
+) -> Tuple[Model, Criterion, Optimizer, Device]:
     """
-    Returns the processed model, criterion, optimizer, scheduler and device.
+    Returns the processed model, criterion, optimizer and device.
 
     Args:
         model: torch model
         criterion: criterion function
         optimizer: optimizer
-        scheduler: scheduler
         distributed_params (dict, optional): dict with the parameters
             for distributed and FP16 method
         device (Device, optional): device
 
     Returns:
-        tuple with processed model, criterion, optimizer, scheduler and device.
+        tuple with processed model, criterion, optimizer and device.
 
     Raises:
         ValueError: if device is None and TPU available,
-            for using TPU need to manualy move model/optimizer/scheduler
+            for using TPU need to manualy move model/optimizer
             to a TPU device and pass device to a function.
         NotImplementedError: if model is not nn.Module or dict for multi-gpu,
             nn.ModuleDict for DataParallel not implemented yet
@@ -62,7 +60,9 @@ def process_components(
         pass
     elif get_rank() >= 0:
         # distributed data parallel run (ddp) (with apex support)
-        assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
+        assert isinstance(
+            model, nn.Module
+        ), "Distributed training is not available for KV model"
 
         local_rank = distributed_params.pop("local_rank", 0) or 0
         device = f"cuda:{local_rank}"
@@ -82,7 +82,11 @@ def process_components(
         )
     else:
         # data parallel run (dp) (with apex support)
-        if torch.cuda.device_count() > 1 and device.type != "cpu" and device.index is None:
+        if (
+            torch.cuda.device_count() > 1
+            and device.type != "cpu"
+            and device.index is None
+        ):
             if isinstance(model, nn.Module):
                 model = nn.DataParallel(model)
             elif isinstance(model, dict):
@@ -92,7 +96,7 @@ def process_components(
 
     model: Model = maybe_recursive_call(model, "to", device=device)
 
-    return model, criterion, optimizer, scheduler, device
+    return model, criterion, optimizer, device
 
 
 __all__ = ["process_components"]

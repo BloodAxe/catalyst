@@ -28,7 +28,9 @@ def test_parse_config_args():
         ]
     )
 
-    configuration, args = utils.parse_config_args(config=configuration, args=args, unknown_args=uargs)
+    configuration, args = utils.parse_config_args(
+        config=configuration, args=args, unknown_args=uargs
+    )
 
     assert args.command == "run"
     assert args.path == "test.yml"

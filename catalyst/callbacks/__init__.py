@@ -19,4 +19,4 @@ from catalyst.callbacks.timer import *
 from catalyst.callbacks.tsa_callback import *
 from catalyst.callbacks.validation import *
 from catalyst.callbacks.visualization import *
-from catalyst.callbacks.reduce_lr_on_plateau import *
+from catalyst.callbacks.schedulers import *

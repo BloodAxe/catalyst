@@ -38,8 +38,15 @@ def test_multiple_stages_with_magic_callback():
             self.valid_loader = copy.copy(runner.valid_loader)
 
         def on_epoch_end(self, runner: "IRunner") -> None:
-            if self.valid_loader not in runner.loaders and runner.epoch > 1 and self._after_first_validation:
-                msg = f"Epochs (epoch={runner.epoch}) " "without valid loader can't be best!"
+            if (
+                self.valid_loader not in runner.loaders
+                and runner.epoch > 1
+                and self._after_first_validation
+            ):
+                msg = (
+                    f"Epochs (epoch={runner.epoch}) "
+                    "without valid loader can't be best!"
+                )
                 assert not runner.is_best_valid, msg
             else:
                 assert runner.valid_metrics[runner.main_metric] is not None
@@ -414,7 +421,11 @@ def test_no_loaders_epoch():
             logdir=logdir,
             num_epochs=10,
             verbose=False,
-            callbacks=[PeriodicLoaderCallback(train=2, train_additional=2, valid=3, valid_additional=0)],
+            callbacks=[
+                PeriodicLoaderCallback(
+                    train=2, train_additional=2, valid=3, valid_additional=0
+                )
+            ],
         )
 
     sys.stdout = old_stdout
@@ -756,7 +767,12 @@ def test_loading_best_state_at_end_with_custom_scores():
     period = 3
     metrics = {
         "train": {i: i * 0.1 for i in range(1, 11)},
-        "valid": {i: v for i, v in enumerate([0.05, 0.1, 0.15, 0.15, 0.2, 0.18, 0.22, 0.11, 0.13, 0.12], 1)},
+        "valid": {
+            i: v
+            for i, v in enumerate(
+                [0.05, 0.1, 0.15, 0.15, 0.2, 0.18, 0.22, 0.11, 0.13, 0.12], 1
+            )
+        },
     }
 
     # first stage

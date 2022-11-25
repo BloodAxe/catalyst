@@ -216,23 +216,7 @@ class IExperiment(ABC):
         """
         pass
 
-    @abstractmethod
-    def get_scheduler(self, stage: str, optimizer: Optimizer) -> Scheduler:
-        """Returns the scheduler for a given stage and optimizer.
-
-        Example::
-            >>> experiment.get_scheduler(stage="training", optimizer=optimizer)
-            torch.optim.lr_scheduler.StepLR(optimizer)
-
-        Args:
-            stage: stage name of interest
-                like "pretrain" / "train" / "finetune" / etc
-            optimizer: optimizer to schedule with stage scheduler
-
-        Returns:  # noqa: DAR202
-            Scheduler: scheduler for a given stage and optimizer.
-        """
-        pass
+  
 
     def get_transforms(self, stage: str = None, dataset: str = None):
         """Returns the data transforms for a given stage and dataset.

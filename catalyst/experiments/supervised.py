@@ -8,7 +8,6 @@ from catalyst.callbacks.optimizer import (
     IOptimizerCallback,
     OptimizerCallback,
 )
-from catalyst.callbacks.scheduler import ISchedulerCallback, SchedulerCallback
 from catalyst.core.callback import Callback
 from catalyst.core.functional import check_callback_isinstance
 from catalyst.experiments.experiment import Experiment
@@ -58,19 +57,20 @@ class SupervisedExperiment(Experiment):
         """
         callbacks = super().get_callbacks(stage=stage) or OrderedDict()
 
-        # default_callbacks = [(Name, InterfaceClass, InstanceFactory)]
         default_callbacks = []
 
-        is_amp_enabled = self.distributed_params.get("amp", False) and check_amp_available()
+        is_amp_enabled = (
+            self.distributed_params.get("amp", False) and check_amp_available()
+        )
         optimizer_cls = AMPOptimizerCallback if is_amp_enabled else OptimizerCallback
 
         if not stage.startswith("infer"):
             if self._criterion is not None and isinstance(self._criterion, Criterion):
                 default_callbacks.append(("_criterion", None, CriterionCallback))
             if self._optimizer is not None and isinstance(self._optimizer, Optimizer):
-                default_callbacks.append(("_optimizer", IOptimizerCallback, optimizer_cls))
-            if self._scheduler is not None and isinstance(self._scheduler, (Scheduler, ReduceLROnPlateau)):
-                default_callbacks.append(("_scheduler", ISchedulerCallback, SchedulerCallback))
+                default_callbacks.append(
+                    ("_optimizer", IOptimizerCallback, optimizer_cls)
+                )
 
         for (
             callback_name,
@@ -78,7 +78,10 @@ class SupervisedExperiment(Experiment):
             callback_fn,
         ) in default_callbacks:
             callback_interface = callback_interface or callback_fn
-            is_already_present = any(check_callback_isinstance(x, callback_interface) for x in callbacks.values())
+            is_already_present = any(
+                check_callback_isinstance(x, callback_interface)
+                for x in callbacks.values()
+            )
             if not is_already_present:
                 callbacks[callback_name] = callback_fn()
 

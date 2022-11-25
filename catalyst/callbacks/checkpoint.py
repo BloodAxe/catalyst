@@ -23,7 +23,6 @@ def _pack_runner(runner: "IRunner"):
         model=runner.model,
         criterion=runner.criterion,
         optimizer=runner.optimizer,
-        scheduler=runner.scheduler,
         epoch_metrics=dict(runner.epoch_metrics),
         valid_metrics=dict(runner.valid_metrics),
         stage_name=runner.stage_name,
@@ -52,7 +51,6 @@ def _load_checkpoint(*, filename, runner: "IRunner", load_full: bool = True) -> 
             loading model (``'model_state_dict'``),
             criterion (``'criterion_state_dict'``) (only for full load),
             optimizer (``'optimizer_state_dict'``),
-            scheduler (``'scheduler_state_dict'``).
 
     Raises:
         FileNotFoundError: when file specified in ``filename``
@@ -78,7 +76,6 @@ def _load_checkpoint(*, filename, runner: "IRunner", load_full: bool = True) -> 
             model=runner.model,
             criterion=runner.criterion,
             optimizer=runner.optimizer,
-            scheduler=runner.scheduler,
         )
 
         print(
@@ -117,7 +114,7 @@ def _required_files(logdir: str, load_map: Dict[str, str]) -> Dict[str, str]:
         return OrderedDict()
 
     default_states = {"best", "best_full", "last", "last_full"}
-    required_full_checkpoint = ["criterion", "optimizer", "scheduler"]
+    required_full_checkpoint = ["criterion", "optimizer"]
     experiment_parts = ["model"] + required_full_checkpoint
 
     # keep required parts
@@ -838,7 +835,6 @@ class BestMetricCheckpointCallback(BaseCheckpointCallback):
             model=state.model,
             criterion=state.criterion,
             optimizer=state.optimizer,
-            scheduler=state.scheduler,
             epoch_metrics=epoch_metrics,
             valid_metrics=valid_metrics,
             stage=state.stage_name,
