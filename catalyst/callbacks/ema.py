@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch import Tensor
 
@@ -13,7 +15,7 @@ class ExponentialMovingAverage:
     Partially based on: https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/python/training/moving_averages.py
     """
 
-    def __init__(self, parameters, decay, use_num_updates=True):
+    def __init__(self, parameters, decay: float, beta: float = 1, use_num_updates=True):
         """
         Args:
           parameters: Iterable of `torch.nn.Parameter`; usually the result of
@@ -25,6 +27,7 @@ class ExponentialMovingAverage:
         if decay < 0.0 or decay > 1.0:
             raise ValueError("Decay must be between 0 and 1")
         self.decay = decay
+        self.beta = beta
         self.num_updates = 0 if use_num_updates else None
         self.shadow_params = [p.clone().detach() for p in parameters if p.requires_grad]
 
@@ -44,12 +47,17 @@ class ExponentialMovingAverage:
             decay = min(decay, (1 + self.num_updates) / (10 + self.num_updates))
 
         parameters = [p for p in parameters if p.requires_grad]
-        for s_param, param in zip(self.shadow_params, parameters):
-            s_param.copy_(self.exponential_moving_average(s_param, param, decay))
+        for ema_param, model_param in zip(self.shadow_params, parameters):
+            ema_param.copy_(self.weighted_sum(ema_param, model_param.detach(), decay))
+
+    def compute_weighting_factor(self, step):
+        return self.decay * (1 - math.exp(-step * self.beta))
 
     @classmethod
-    def exponential_moving_average(cls, averaged_weights: Tensor, current_weights: Tensor, decay: float) -> Tensor:
-        return decay * averaged_weights + (1.0 - decay) * current_weights
+    def weighted_sum(
+        cls, averaged_weights: Tensor, current_weights: Tensor, p: float
+    ) -> Tensor:
+        return p * averaged_weights + (1.0 - p) * current_weights
 
     def copy_to(self, parameters):
         """
@@ -64,7 +72,10 @@ class ExponentialMovingAverage:
 
 
 class EMABatchCallback(Callback):
-    """@TODO: Docs. Contribution is welcome."""
+    """EMA weights averaging callback.
+    On validation epoch this callback changes the model for evaluation to EMA-averaged and flip it back to "regular"
+    model on training epochs.
+    """
 
     def __repr__(self):
         return f"EMABatchCallback(decay={self.decay}, use_num_updates={self.use_num_updates})"
@@ -80,23 +91,38 @@ class EMABatchCallback(Callback):
         self.decay = decay
         self.apply_after_epoch = apply_after_epoch
         self.use_num_updates = use_num_updates
+        self.model_state_dict = None
 
     def on_stage_start(self, runner: IRunner):
-        self.ema = None
-
-    def on_loader_start(self, runner: "IRunner"):
-        if runner.is_train_loader and runner.epoch == self.apply_after_epoch:
-            self.ema = ExponentialMovingAverage(
+        self.ema = ExponentialMovingAverage(
                 runner.model.parameters(),
-                self.decay,
+                decay=self.decay,
+                beta=self.beta,
                 use_num_updates=self.use_num_updates,
             )
+        self.model_state_dict = None
 
-    def on_batch_end(self, state: IRunner):
+    def on_loader_start(self, runner: "IRunner"):
+        if runner.is_train_loader:
+            pass
+        elif runner.is_valid_loader:
+            self.model_state_dict = runner.model.state_dict()
+            self.ema.copy_to(runner.model)
+        else:
+            pass
+
+    def on_batch_end(self, runner: IRunner):
         if state.is_train_loader and state.epoch >= self.apply_after_epoch:
             self.ema.update(state.model.parameters())
 
-    def on_loader_end(self, state):
+    def on_loader_end(self, runner:IRunner):
+        if runner.is_train_loader:
+            self.ema.copy_to(runner.model)
+        elif runner.is_valid_loader:
+            pass
+        else:
+            pass
+
         if state.is_train_loader and state.epoch >= self.apply_after_epoch:
             self.ema.copy_to(state.model.parameters())
 
