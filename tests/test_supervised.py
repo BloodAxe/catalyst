@@ -91,7 +91,6 @@ def test_defaults_check():
 
     test_callbacks = OrderedDict(
         [
-            ("_check", CheckRunCallback),
             ("_metrics", MetricManagerCallback),
             ("_validation", ValidationManagerCallback),
             ("_saver", CheckpointCallback),

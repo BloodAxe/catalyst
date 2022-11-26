@@ -54,14 +54,15 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
 
     def on_batch_start(self, runner: IRunner):
         if runner.is_train_loader:
-            if runner.global_optimizer_step <= self.warmup_num_steps:
-                scale = self.warmup_lr_interpolation_factors[runner.global_batch_step]
+            if runner.global_optimizer_step < self.warmup_num_steps:
+                scale = self.warmup_lr_interpolation_factors[runner.global_optimizer_step]
                 scale_lr_for_param_groups(
                     runner.optimizer.param_groups, self.original_learning_rates, scale
                 )
 
     def on_epoch_start(self, runner: IRunner):
         if self.epochs_without_improvement >= self.patience:
+            self.epochs_without_improvement = 0
             for pg in runner.optimizer.param_groups:
                 pg["lr"] *= self.multiplier
 
