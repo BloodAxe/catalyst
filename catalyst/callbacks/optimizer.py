@@ -414,6 +414,9 @@ class OptimizerLoggerCallback(Callback):
         Args:
             runner: current runner
         """
+        if not runner.is_train_loader:
+            return
+
         _optimizer: torch.optim.Optimizer = runner.get_attr(
             key="optimizer", inner_key=self.optimizer_key
         )

@@ -20,13 +20,14 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
     ):
         super().__init__(order=CallbackOrder.scheduler, node=CallbackNode.all)
         self.final_lr_fraction = final_lr_fraction
+        
         self.warmup_num_steps = warmup_num_steps
         self.warmup_lr_fraction = warmup_lr_fraction
-        self.original_learning_rates = None
         self.warmup_lr_interpolation_factors = np.linspace(
-            self.warmup_lr_fraction, 1.0, num=self.warmup_num_steps
+            warmup_lr_fraction, 1.0, num=warmup_num_steps
         )
-    
+        self.original_learning_rates = None
+
     def __repr__(self):
         main_desc = f"Cosine decay to {self.final_lr_fraction}x of initial LR"
         if self.warmup_num_steps:
@@ -44,7 +45,7 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         if not runner.is_train_loader:
             return
 
-        if runner.global_optimizer_step <= self.warmup_num_steps:
+        if runner.global_optimizer_step < self.warmup_num_steps:
             scale = self.warmup_lr_interpolation_factors[runner.global_optimizer_step]
 
             for original_lr, pg in zip(
