@@ -57,8 +57,8 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
         if not runner.is_train_loader:
             return
 
-        if runner.global_optimizer_step < self.warmup_num_steps:
-            scale = self.warmup_lr_interpolation_factors[runner.global_optimizer_step]
+        if runner.global_grad_update_step < self.warmup_num_steps:
+            scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
             scale_lr_for_param_groups(
                 runner.optimizer.param_groups, self.original_learning_rates, scale
             )

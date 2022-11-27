@@ -45,8 +45,8 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         if not runner.is_train_loader:
             return
 
-        if runner.global_optimizer_step < self.warmup_num_steps:
-            scale = self.warmup_lr_interpolation_factors[runner.global_optimizer_step]
+        if runner.global_grad_update_step < self.warmup_num_steps:
+            scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
 
             for original_lr, pg in zip(
                 self.original_learning_rates, runner.optimizer.param_groups

@@ -1,11 +1,29 @@
+import collections
 import math
+import typing
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 
 from catalyst.core import IRunner, Callback, CallbackOrder
+from catalyst.callbacks.optimizer import IOptimizerCallback
 
-__all__ = ["ExponentialMovingAverage", "EMABatchCallback", "EMAEpochCallback"]
+__all__ = ["ExponentialMovingAverage", "EMACallback"]
+
+
+class EMADecay:
+    def __call__(self, step: int, total_steps: int):
+        raise NotImplementedError
+
+
+class ExpEMADecay(EMADecay):
+    def __init__(self, decay, beta):
+        self.decay = decay
+        self.beta = beta
+
+    def __call__(self, step: int, total_steps: int):
+        p = step / total_steps
+        return self.decay * (1 - math.exp(-p * self.beta))
 
 
 class ExponentialMovingAverage:
@@ -15,24 +33,26 @@ class ExponentialMovingAverage:
     Partially based on: https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/python/training/moving_averages.py
     """
 
-    def __init__(self, parameters, decay: float, beta: float = 1, use_num_updates=True):
+    def __init__(
+        self,
+        parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]],
+        decay: EMADecay,
+        total_steps: int,
+    ):
         """
         Args:
           parameters: Iterable of `torch.nn.Parameter`; usually the result of
             `model.parameters()`.
           decay: The exponential decay.
-          use_num_updates: Whether to use number of updates when computing
-            averages.
         """
-        if decay < 0.0 or decay > 1.0:
-            raise ValueError("Decay must be between 0 and 1")
         self.decay = decay
-        self.beta = beta
-        self.num_updates = 0 if use_num_updates else None
-        self.shadow_params = [p.clone().detach() for p in parameters if p.requires_grad]
+        self.total_steps = total_steps
+        self.ema_params = collections.OrderedDict(
+            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
+        )
 
     @torch.no_grad()
-    def update(self, parameters):
+    def update(self, parameters: collections.OrderedDict, step: int):
         """
         Update currently maintained parameters.
         Call this every time the parameters are updated, such as the result of
@@ -41,17 +61,29 @@ class ExponentialMovingAverage:
           parameters: Iterable of `torch.nn.Parameter`; usually the same set of
             parameters used to initialize this object.
         """
-        decay = self.decay
-        if self.num_updates is not None:
-            self.num_updates += 1
-            decay = min(decay, (1 + self.num_updates) / (10 + self.num_updates))
+        decay = self.decay(step, self.total_steps)
 
-        parameters = [p for p in parameters if p.requires_grad]
-        for ema_param, model_param in zip(self.shadow_params, parameters):
-            ema_param.copy_(self.weighted_sum(ema_param, model_param.detach(), decay))
+        parameters = collections.OrderedDict(
+            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
+        )
 
-    def compute_weighting_factor(self, step):
-        return self.decay * (1 - math.exp(-step * self.beta))
+        if parameters.keys() != self.ema_params.keys():
+            raise RuntimeError("Keys in EMA model and current model does not match")
+
+        for key in self.ema_params.keys():
+            self.ema_params[key].copy_(
+                self.weighted_sum(self.ema_params[key], parameters[key].detach(), decay)
+            )
+
+    def copy_to(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]]):
+        """
+        Copies current parameters into given collection of parameters.
+        Args:
+          parameters: Iterable of `torch.nn.Parameter`; the parameters to be
+            updated with the stored moving averages.
+        """
+        for key, recipient_param in parameters:
+            recipient_param.data.copy_(self.ema_params[key])
 
     @classmethod
     def weighted_sum(
@@ -59,22 +91,12 @@ class ExponentialMovingAverage:
     ) -> Tensor:
         return p * averaged_weights + (1.0 - p) * current_weights
 
-    def copy_to(self, parameters):
-        """
-        Copies current parameters into given collection of parameters.
-        Args:
-          parameters: Iterable of `torch.nn.Parameter`; the parameters to be
-            updated with the stored moving averages.
-        """
-        for s_param, param in zip(self.shadow_params, parameters):
-            if param.requires_grad:
-                param.data.copy_(s_param.data)
 
-
-class EMABatchCallback(Callback):
+class EMACallback(Callback):
     """EMA weights averaging callback.
+    It updates EMA weights after end of each training batch.
     On validation epoch this callback changes the model for evaluation to EMA-averaged and flip it back to "regular"
-    model on training epochs.
+    model on start of training epochs.
     """
 
     def __repr__(self):
@@ -82,82 +104,64 @@ class EMABatchCallback(Callback):
 
     def __init__(
         self,
-        decay: float = 0.99,
+        decay: float,
+        beta: float,
         use_num_updates: bool = True,
         apply_after_epoch: int = 0,
     ):
         super().__init__(CallbackOrder.Optimizer + 1)
-        self.ema = None
+        self.ema: ExponentialMovingAverage = None
         self.decay = decay
+        self.beta = beta
         self.apply_after_epoch = apply_after_epoch
         self.use_num_updates = use_num_updates
-        self.model_state_dict = None
+        self.non_ema_state_dict = None
 
     def on_stage_start(self, runner: IRunner):
+        optimizer_callback: IOptimizerCallback = runner.get_callback(IOptimizerCallback)
+
+        total_grad_update_steps = (
+            len(runner.loaders["train"]) * runner.num_epochs
+        ) // optimizer_callback.grad_accumulation_steps
+
         self.ema = ExponentialMovingAverage(
-                runner.model.parameters(),
-                decay=self.decay,
-                beta=self.beta,
-                use_num_updates=self.use_num_updates,
-            )
-        self.model_state_dict = None
-
-    def on_loader_start(self, runner: "IRunner"):
-        if runner.is_train_loader:
-            pass
-        elif runner.is_valid_loader:
-            self.model_state_dict = runner.model.state_dict()
-            self.ema.copy_to(runner.model)
-        else:
-            pass
-
-    def on_batch_end(self, runner: IRunner):
-        if state.is_train_loader and state.epoch >= self.apply_after_epoch:
-            self.ema.update(state.model.parameters())
-
-    def on_loader_end(self, runner:IRunner):
-        if runner.is_train_loader:
-            self.ema.copy_to(runner.model)
-        elif runner.is_valid_loader:
-            pass
-        else:
-            pass
-
-        if state.is_train_loader and state.epoch >= self.apply_after_epoch:
-            self.ema.copy_to(state.model.parameters())
+            parameters=runner.model.named_parameters(),
+            decay=ExpEMADecay(decay=self.decay, beta=self.beta),
+            total_steps=total_grad_update_steps,
+        )
+        self.non_ema_state_dict = None
 
     def on_stage_end(self, runner: "IRunner"):
         self.ema = None
+        self.non_ema_state_dict = None
 
+    def on_loader_start(self, runner: "IRunner"):
+        if runner.is_train_loader:
+            # On the start of train loader we load model state dict.
+            # non_ema_state_dict may be None on the first epoch
+            if self.non_ema_state_dict:
+                runner.model.load_state_dict(self.non_ema_state_dict)
+        elif runner.is_valid_loader:
+            self.non_ema_state_dict = runner.model.state_dict()
+            self.ema.copy_to(runner.model.named_parameters())
 
-class EMAEpochCallback(Callback):
-    """
-    This EMA callback:
-    1) Saves a copy of parameters on start of the training stage
-    2) On each training step end it updates the shadow copy using EMA
-    3) On start of each load it loads model weights from shadow copy
-    """
+    def on_loader_end(self, runner: IRunner):
+        pass
 
-    def __repr__(self):
-        return f"EMAEpochCallback(decay={self.decay}, apply_after_epoch={self.apply_after_epoch}, use_num_updates={self.use_num_updates})"
+    def on_grad_step_end(self, runner: IRunner):
+        if not runner.is_train_loader:
+            raise RuntimeError(
+                "A on_grad_step_end called from non-train loader. "
+                "This is likey a bug in the library"
+            )
 
-    def __init__(self, decay: float = 0.99, apply_after_epoch=0, use_num_updates=False):
-        super().__init__(CallbackOrder.Optimizer + 1)
-        self.ema = None
-        self.decay = decay
-        self.apply_after_epoch = apply_after_epoch
-        self.use_num_updates = use_num_updates
-
-    def on_stage_start(self, runner: IRunner):
-        self.ema = ExponentialMovingAverage(
-            runner.model.parameters(),
-            decay=self.decay,
-            use_num_updates=self.use_num_updates,
+        decay = self.ema.decay(
+            step=runner.global_grad_update_step,
+            total_steps=self.ema.total_steps
         )
 
-    def on_loader_start(self, state: IRunner):
-        self.ema.copy_to(state.model.parameters())
-
-    def on_loader_end(self, runner):
-        if runner.is_train_loader and runner.epoch > self.apply_after_epoch:
-            self.ema.update(runner.model.parameters())
+        runner.batch_metrics["_ema/decay"] = decay
+        
+        self.ema.update(
+            runner.model.named_parameters(), step=runner.global_grad_update_step
+        )

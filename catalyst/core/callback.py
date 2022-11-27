@@ -87,6 +87,7 @@ class Callback:
         ------ loader start
         -------- batch start
         ---------- batch handler (Runner logic)
+        -----------grad step
         -------- batch end
         ------ loader end
         ---- epoch end
@@ -182,6 +183,24 @@ class Callback:
 
     def on_batch_start(self, runner: "IRunner"):
         """Event handler for batch start.
+
+        Args:
+            runner: IRunner instance.
+        """
+        pass
+
+    def on_grad_step_start(self, runner: "IRunner"):
+        """Event handler that happens before gradients are about to be updated.
+        Callbed from OptimizerCallback
+
+        Args:
+            runner: IRunner instance.
+        """
+        pass
+
+    def on_grad_step_end(self, runner: "IRunner"):
+        """Event handler that happens after gradient has been updated.
+        Callbed from OptimizerCallback
 
         Args:
             runner: IRunner instance.

@@ -452,7 +452,7 @@ class IRunner(ABC, FrozenClass):
         # experiment info
         self.global_sample_step: int = 0
         self.global_batch_step: int = 0
-        self.global_optimizer_step: int = 0
+        self.global_grad_update_step: int = 0
         self.global_epoch: int = 1
         self.verbose: bool = verbose
         self.is_check_run: bool = is_check_run
@@ -499,6 +499,22 @@ class IRunner(ABC, FrozenClass):
         to specify type for Runners' Experiment.
         """
         self.experiment: IExperiment = None
+
+    def get_callback(self, callback_cls):
+        cbs = [
+            callback
+            for callback in self.callbacks.values()
+            if isinstance(callback, callback_cls)
+        ]
+        if len(cbs) == 0:
+            raise RuntimeError(
+                f"Callback of class {callback_cls} was not found in callbacks"
+            )
+        if len(cbs) > 1:
+            raise RuntimeError(
+                f"More than one callback of class {callback_cls} was found in callbacks"
+            )
+        return cbs[0]
 
     @property
     def model(self) -> Model:
@@ -706,7 +722,7 @@ class IRunner(ABC, FrozenClass):
         """
         pass
 
-    def _run_event(self, event: str) -> None:
+    def run_event(self, event: str) -> None:
         """Inner method to run specified event on Runners' callbacks.
 
         Args:
@@ -770,9 +786,9 @@ class IRunner(ABC, FrozenClass):
         batch = self._batch2device(batch, self.device)
         self.input = batch
 
-        self._run_event("on_batch_start")
+        self.run_event("on_batch_start")
         self._handle_batch(batch=batch)
-        self._run_event("on_batch_end")
+        self.run_event("on_batch_end")
 
     def _run_loader(self, loader: DataLoader) -> None:
         """
@@ -799,7 +815,6 @@ class IRunner(ABC, FrozenClass):
             if self.need_early_stop:
                 self.need_early_stop = False
                 break
-    
 
     def _run_epoch(self, stage: str, epoch: int) -> None:
         """
@@ -867,10 +882,10 @@ class IRunner(ABC, FrozenClass):
             set_global_seed(
                 self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
             )
-            self._run_event("on_loader_start")
+            self.run_event("on_loader_start")
             with torch.set_grad_enabled(self.is_train_loader):
                 self._run_loader(loader)
-            self._run_event("on_loader_end")
+            self.run_event("on_loader_end")
 
     def _run_stage(self, stage: str) -> None:
         """
@@ -884,14 +899,14 @@ class IRunner(ABC, FrozenClass):
         """
         self._prepare_for_stage(stage)
 
-        self._run_event("on_stage_start")
+        self.run_event("on_stage_start")
         while self.epoch < self.num_epochs + 1:
             set_global_seed(
                 self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
             )
-            self._run_event("on_epoch_start")
+            self.run_event("on_epoch_start")
             self._run_epoch(stage=stage, epoch=self.epoch)
-            self._run_event("on_epoch_end")
+            self.run_event("on_epoch_end")
 
             if self.need_early_stop:
                 self.need_early_stop = False
@@ -899,7 +914,7 @@ class IRunner(ABC, FrozenClass):
 
             self.global_epoch += 1
             self.epoch += 1
-        self._run_event("on_stage_end")
+        self.run_event("on_stage_end")
 
     def run_experiment(self, experiment: IExperiment = None) -> "IRunner":
         """
@@ -934,7 +949,7 @@ class IRunner(ABC, FrozenClass):
 
             if _exception_handler_check(getattr(self, "callbacks", None)):
                 self.exception = ex
-                self._run_event("on_exception")
+                self.run_event("on_exception")
             else:
                 raise ex
 
@@ -966,12 +981,7 @@ class IStageBasedRunner(IRunner):
         self.loaders = loaders
 
         set_global_seed(self.experiment.initial_seed)
-        (
-            model,
-            criterion,
-            optimizer,
-            device,
-        ) = self._get_experiment_components(
+        (model, criterion, optimizer, device,) = self._get_experiment_components(
             experiment=self.experiment, stage=stage, device=self.device
         )
 

@@ -11,7 +11,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from catalyst.dl import (
+from catalyst.callbacks import (
     Callback,
     CallbackOrder,
     CheckpointCallback,

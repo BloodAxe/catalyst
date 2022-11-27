@@ -1,3 +1,4 @@
+import abc
 import warnings
 from typing import Callable, Dict, Mapping
 
@@ -82,7 +83,10 @@ def grad_norm(model: nn.Module, prefix: str, norm_type: int) -> Dict[str, float]
 class IOptimizerCallback(Callback):
     """Optimizer callback interface, abstraction over optimizer step."""
 
-    pass
+    @property
+    @abc.abstractmethod
+    def grad_accumulation_steps(self) -> int:
+        raise NotImplementedError
 
 
 class OptimizerCallback(IOptimizerCallback):
@@ -136,6 +140,10 @@ class OptimizerCallback(IOptimizerCallback):
 
         self.update_to_weight_prefix = update_to_weight_prefix
 
+    @property
+    def grad_accumulation_steps(self) -> int:
+        return self.accumulation_steps
+
     def _optimizer_step(self, optimizer: Optimizer) -> None:
         """CPU and GPU optimization step.
 
@@ -178,7 +186,7 @@ class OptimizerCallback(IOptimizerCallback):
         # Step
         # optimize parameters
         self._optimizer_step_fn(optimizer)
-        runner.global_optimizer_step += 1
+        runner.global_grad_update_step += 1
 
     def on_stage_start(self, runner: "IRunner") -> None:
         """Checks that the current stage has correct optimizer.
@@ -212,11 +220,14 @@ class OptimizerCallback(IOptimizerCallback):
         loss.backward()
 
         if need_gradient_step:
+            runner.run_event("on_grad_step_start")
             self.grad_step(
                 runner,
                 optimizer=self._optimizer,
                 grad_clip_params=self.grad_clip_params,
             )
+            runner.run_event("on_grad_step_end")
+
             self._optimizer.zero_grad(set_to_none=True)
             self._accumulation_counter = 0
 
@@ -282,6 +293,10 @@ class AMPOptimizerCallback(IOptimizerCallback):
 
         self.update_to_weight_prefix = update_to_weight_prefix
 
+    @property
+    def grad_accumulation_steps(self) -> int:
+        return self.accumulation_steps
+
     def grad_step(
         self,
         runner,
@@ -318,7 +333,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
 
         self.scaler.step(optimizer)
         self.scaler.update()
-        runner.global_optimizer_step += 1
+        runner.global_grad_update_step += 1
 
     def on_stage_start(self, runner: "IRunner") -> None:
         """Checks that the current stage has correct optimizer.
@@ -365,11 +380,15 @@ class AMPOptimizerCallback(IOptimizerCallback):
         self.scaler.scale(loss).backward()
 
         if need_gradient_step:
+            runner.run_event("on_grad_step_start")
+
             self.grad_step(
                 runner,
                 optimizer=self._optimizer,
                 grad_clip_params=self.grad_clip_params,
             )
+
+            runner.run_event("on_grad_step_end")
             self._optimizer.zero_grad(set_to_none=True)
             self._accumulation_counter = 0
 
