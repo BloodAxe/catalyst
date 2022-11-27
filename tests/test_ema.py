@@ -27,26 +27,27 @@ def test_ema_decay():
     plt.figure()
     plt.plot(
         x,
-        ExpEMADecay(decay=0.9999, beta=2)(x, total_steps=max(x)),
-        label="decay=0.9999, beta=2",
-    )
-    plt.plot(
-        x,
-        ExpEMADecay(decay=0.9999, beta=3)(x, total_steps=max(x)),
-        label="decay=0.9999, beta=3",
-    )
-    plt.plot(
-        x,
-        ExpEMADecay(decay=0.9999, beta=4)(x, total_steps=max(x)),
-        label="decay=0.9999, beta=4",
-    )
-    plt.plot(
-        x,
         ExpEMADecay(decay=0.9999, beta=5)(x, total_steps=max(x)),
         label="decay=0.9999, beta=5",
     )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=10)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=10",
+    )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=15)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=15",
+    )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=20)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=20",
+    )
     plt.tight_layout()
     plt.legend()
+    plt.title("ExpEMADecay")
     plt.show()
 
 
@@ -78,12 +79,13 @@ def test_beta_decay():
     )
     plt.tight_layout()
     plt.legend()
+    plt.title("BetaDecay")
     plt.show()
 
 
 def test_ema():
     """Tests EarlyStoppingCallback."""
-    ema = EMACallback(decay=0.9999, beta=15)
+    ema = EMACallback(decay=BetaDecay(beta=5))
 
     model = nn.Sequential(
         collections.OrderedDict(

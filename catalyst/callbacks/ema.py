@@ -23,7 +23,8 @@ class ExpEMADecay(EMADecay):
 
     def __call__(self, step: int, total_steps: int):
         p = step / total_steps
-        return self.decay * (1 - math.exp(-p * self.beta))
+        return self.decay * (1 - np.exp(-p * self.beta))
+
 
 class BetaDecay(EMADecay):
     def __init__(self, beta):
@@ -31,8 +32,9 @@ class BetaDecay(EMADecay):
 
     def __call__(self, step: int, total_steps: int):
         p = step / total_steps
-        decay = (1 - np.exp(-p) ** self.beta)
+        decay = 1 - np.exp(-p) ** self.beta
         return decay
+
 
 class ExponentialMovingAverage:
     """
@@ -44,8 +46,6 @@ class ExponentialMovingAverage:
     def __init__(
         self,
         parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]],
-        decay: EMADecay,
-        total_steps: int,
     ):
         """
         Args:
@@ -53,14 +53,12 @@ class ExponentialMovingAverage:
             `model.parameters()`.
           decay: The exponential decay.
         """
-        self.decay = decay
-        self.total_steps = total_steps
         self.ema_params = collections.OrderedDict(
             [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
         )
 
     @torch.no_grad()
-    def update(self, parameters: collections.OrderedDict, step: int):
+    def update(self, parameters: collections.OrderedDict, decay: float):
         """
         Update currently maintained parameters.
         Call this every time the parameters are updated, such as the result of
@@ -69,7 +67,6 @@ class ExponentialMovingAverage:
           parameters: Iterable of `torch.nn.Parameter`; usually the same set of
             parameters used to initialize this object.
         """
-        decay = self.decay(step, self.total_steps)
 
         parameters = collections.OrderedDict(
             [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
@@ -112,30 +109,26 @@ class EMACallback(Callback):
 
     def __init__(
         self,
-        decay: float,
-        beta: float,
+        decay: EMADecay,
         use_num_updates: bool = True,
         apply_after_epoch: int = 0,
     ):
         super().__init__(CallbackOrder.Optimizer + 1)
         self.ema: ExponentialMovingAverage = None
         self.decay = decay
-        self.beta = beta
         self.apply_after_epoch = apply_after_epoch
         self.use_num_updates = use_num_updates
         self.non_ema_state_dict = None
+        self.total_grad_update_steps = 0
 
     def on_stage_start(self, runner: IRunner):
         optimizer_callback: IOptimizerCallback = runner.get_callback(IOptimizerCallback)
-
-        total_grad_update_steps = (
+        self.total_grad_update_steps = (
             len(runner.loaders["train"]) * runner.num_epochs
         ) // optimizer_callback.grad_accumulation_steps
 
         self.ema = ExponentialMovingAverage(
             parameters=runner.model.named_parameters(),
-            decay=ExpEMADecay(decay=self.decay, beta=self.beta),
-            total_steps=total_grad_update_steps,
         )
         self.non_ema_state_dict = None
 
@@ -163,13 +156,11 @@ class EMACallback(Callback):
                 "This is likey a bug in the library"
             )
 
-        decay = self.ema.decay(
+        decay = self.decay(
             step=runner.global_grad_update_step,
-            total_steps=self.ema.total_steps
+            total_steps=self.total_grad_update_steps,
         )
 
         runner.batch_metrics["_ema/decay"] = decay
-        
-        self.ema.update(
-            runner.model.named_parameters(), step=runner.global_grad_update_step
-        )
+
+        self.ema.update(runner.model.named_parameters(), decay)
