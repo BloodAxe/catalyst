@@ -15,7 +15,70 @@ from catalyst.callbacks import (
     CosineDecaySchedulerCallback,
     EMACallback,
 )
+from catalyst.callbacks.ema import EMADecay, ExpEMADecay, BetaDecay
 from catalyst.runners import SupervisedRunner
+
+
+def test_ema_decay():
+    import matplotlib.pyplot as plt
+
+    x = np.linspace(1, 1000000, num=1024)
+
+    plt.figure()
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=2)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=2",
+    )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=3)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=3",
+    )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=4)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=4",
+    )
+    plt.plot(
+        x,
+        ExpEMADecay(decay=0.9999, beta=5)(x, total_steps=max(x)),
+        label="decay=0.9999, beta=5",
+    )
+    plt.tight_layout()
+    plt.legend()
+    plt.show()
+
+
+def test_beta_decay():
+    import matplotlib.pyplot as plt
+
+    x = np.linspace(1, 1000000, num=1024)
+
+    plt.figure()
+    plt.plot(
+        x,
+        BetaDecay(beta=2)(x, total_steps=max(x)),
+        label="beta=2",
+    )
+    plt.plot(
+        x,
+        BetaDecay(beta=3)(x, total_steps=max(x)),
+        label="beta=3",
+    )
+    plt.plot(
+        x,
+        BetaDecay(beta=4)(x, total_steps=max(x)),
+        label="beta=4",
+    )
+    plt.plot(
+        x,
+        BetaDecay(beta=5)(x, total_steps=max(x)),
+        label="beta=5",
+    )
+    plt.tight_layout()
+    plt.legend()
+    plt.show()
 
 
 def test_ema():
@@ -69,4 +132,3 @@ def test_ema():
         logdir="./test_ema",
         verbose=True,
     )
-

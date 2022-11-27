@@ -1,7 +1,7 @@
 import collections
 import math
 import typing
-
+import numpy as np
 import torch
 from torch import Tensor, nn
 
@@ -25,6 +25,14 @@ class ExpEMADecay(EMADecay):
         p = step / total_steps
         return self.decay * (1 - math.exp(-p * self.beta))
 
+class BetaDecay(EMADecay):
+    def __init__(self, beta):
+        self.beta = beta
+
+    def __call__(self, step: int, total_steps: int):
+        p = step / total_steps
+        decay = (1 - np.exp(-p) ** self.beta)
+        return decay
 
 class ExponentialMovingAverage:
     """
