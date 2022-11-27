@@ -30,6 +30,9 @@ class BetaDecay(EMADecay):
     def __init__(self, beta):
         self.beta = beta
 
+    def __repr__(self):
+        return f"BetaDecay(beta={self.beta})"
+
     def __call__(self, step: int, total_steps: int):
         p = step / total_steps
         decay = 1 - np.exp(-p) ** self.beta
@@ -105,19 +108,15 @@ class EMACallback(Callback):
     """
 
     def __repr__(self):
-        return f"EMABatchCallback(decay={self.decay}, use_num_updates={self.use_num_updates})"
+        return f"EMACallback(decay={self.decay})"
 
     def __init__(
         self,
         decay: EMADecay,
-        use_num_updates: bool = True,
-        apply_after_epoch: int = 0,
     ):
         super().__init__(CallbackOrder.Optimizer + 1)
         self.ema: ExponentialMovingAverage = None
         self.decay = decay
-        self.apply_after_epoch = apply_after_epoch
-        self.use_num_updates = use_num_updates
         self.non_ema_state_dict = None
         self.total_grad_update_steps = 0
 
