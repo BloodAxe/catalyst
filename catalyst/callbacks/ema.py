@@ -8,7 +8,7 @@ from torch import Tensor, nn
 from catalyst.core import IRunner, Callback, CallbackOrder
 from catalyst.callbacks.optimizer import IOptimizerCallback
 
-__all__ = ["ExponentialMovingAverage", "EMACallback"]
+__all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay"]
 
 
 class EMADecay:
