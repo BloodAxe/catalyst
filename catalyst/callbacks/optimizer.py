@@ -240,6 +240,7 @@ class OptimizerCallback(IOptimizerCallback):
 
         if isinstance(self._optimizer, ZeroRedundancyOptimizer):
             self._optimizer.consolidate_state_dict()
+            torch.distributed.barrier()
 
 
 class AMPOptimizerCallback(IOptimizerCallback):
@@ -400,6 +401,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         """
         if isinstance(self._optimizer, ZeroRedundancyOptimizer):
             self._optimizer.consolidate_state_dict()
+            torch.distributed.barrier()
 
     def on_stage_end(self, runner: "IRunner") -> None:
         """On stage end event.
@@ -424,7 +426,7 @@ class OptimizerLoggerCallback(Callback):
             optimizer_key: A key to take an optimizer in case
                 there are several of them, and they are in a dictionary format.
         """
-        super().__init__(order=CallbackOrder.optimizer + 1, node=CallbackNode.all)
+        super().__init__(order=CallbackOrder.optimizer + 1, node=CallbackNode.All)
         self.optimizer_key = optimizer_key
 
     def on_batch_end(self, runner: "IRunner") -> None:
