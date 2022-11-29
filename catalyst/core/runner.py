@@ -905,7 +905,11 @@ class IRunner(ABC, FrozenClass):
                 self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
             )
             self.run_event("on_epoch_start")
+            maybe_torch_distributed_barrier()
+
             self._run_epoch(stage=stage, epoch=self.epoch)
+
+            maybe_torch_distributed_barrier()
             self.run_event("on_epoch_end")
 
             if self.need_early_stop:
@@ -914,6 +918,8 @@ class IRunner(ABC, FrozenClass):
 
             self.global_epoch += 1
             self.epoch += 1
+
+        maybe_torch_distributed_barrier()
         self.run_event("on_stage_end")
 
     def run_experiment(self, experiment: IExperiment = None) -> "IRunner":

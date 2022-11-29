@@ -28,6 +28,9 @@ def check_torch_distributed_initialized() -> bool:
     """Checks if torch.distributed is available and initialized."""
     return torch.distributed.is_available() and torch.distributed.is_initialized()
 
+def maybe_torch_distributed_barrier():
+    if check_torch_distributed_initialized():
+        torch.distributed.barrier()
 
 def check_slurm_available():
     """Checks if slurm is available."""
@@ -153,6 +156,7 @@ __all__ = [
     "check_amp_available",
     "check_torch_distributed_initialized",
     "check_slurm_available",
+    "maybe_torch_distributed_barrier",
     "get_nn_from_ddp_module",
     "get_rank",
     "get_distributed_mean",
