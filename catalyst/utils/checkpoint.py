@@ -6,20 +6,23 @@ from pathlib import Path
 from typing import Callable, Dict, Union
 
 import torch
+from torch import nn
 
 from catalyst.utils.distributed import get_nn_from_ddp_module
 from catalyst.utils.misc import maybe_recursive_call
 
 
-def pack_checkpoint(model=None, criterion=None, optimizer=None, scheduler=None, **kwargs):
+def pack_checkpoint(
+    model=None, criterion=None, optimizer=None, scheduler=None, **kwargs
+):
 
     checkpoint = kwargs
 
     if isinstance(model, OrderedDict):
         raise NotImplementedError()
     else:
-        model_module = get_nn_from_ddp_module(model)
-        checkpoint["model_state_dict"] = maybe_recursive_call(model_module, "state_dict")
+        model_module: nn.Module = get_nn_from_ddp_module(model)
+        checkpoint["model_state_dict"] = model_module.state_dict()
 
     for dict2save, name2save in zip(
         [criterion, optimizer, scheduler],
@@ -43,7 +46,9 @@ def pack_checkpoint(model=None, criterion=None, optimizer=None, scheduler=None, 
     return checkpoint
 
 
-def unpack_checkpoint(checkpoint, model=None, criterion=None, optimizer=None, scheduler=None) -> None:
+def unpack_checkpoint(
+    checkpoint, model=None, criterion=None, optimizer=None, scheduler=None
+) -> None:
     """Load checkpoint from file and unpack the content to a model
     (if not None), criterion (if not None), optimizer (if not None),
     scheduler (if not None).
