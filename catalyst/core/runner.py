@@ -26,13 +26,12 @@ from catalyst.typing import (
     Scheduler,
 )
 from catalyst.utils.components import process_components
-from catalyst.utils.distributed import get_rank
+from catalyst.utils.distributed import get_rank,maybe_torch_distributed_barrier
 from catalyst.utils.loaders import validate_loaders
 from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.seed import set_global_seed
 from catalyst.utils.torch import any2device
 
-from pytorch_toolbelt.utils.distributed import get_rank
 
 
 class RunnerException(Exception):
