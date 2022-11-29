@@ -882,10 +882,17 @@ class IRunner(ABC, FrozenClass):
             set_global_seed(
                 self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
             )
+
+            maybe_torch_distributed_barrier()
             self.run_event("on_loader_start")
+            maybe_torch_distributed_barrier()
+
             with torch.set_grad_enabled(self.is_train_loader):
                 self._run_loader(loader)
+
+            maybe_torch_distributed_barrier()
             self.run_event("on_loader_end")
+            maybe_torch_distributed_barrier()
 
     def _run_stage(self, stage: str) -> None:
         """
@@ -904,6 +911,8 @@ class IRunner(ABC, FrozenClass):
             set_global_seed(
                 self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
             )
+
+            maybe_torch_distributed_barrier()
             self.run_event("on_epoch_start")
             maybe_torch_distributed_barrier()
 
@@ -911,6 +920,7 @@ class IRunner(ABC, FrozenClass):
 
             maybe_torch_distributed_barrier()
             self.run_event("on_epoch_end")
+            maybe_torch_distributed_barrier()
 
             if self.need_early_stop:
                 self.need_early_stop = False
