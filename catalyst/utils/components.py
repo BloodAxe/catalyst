@@ -9,7 +9,6 @@ from catalyst.typing import Criterion, Device, Model, Optimizer
 from catalyst.utils.distributed import (
     check_amp_available,
     check_ddp_wrapped,
-    get_distributed_params,
     get_rank,
 )
 from catalyst.utils.misc import maybe_recursive_call

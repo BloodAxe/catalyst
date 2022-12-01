@@ -24,7 +24,6 @@ from catalyst.utils.dict import (
 )
 from catalyst.utils.distributed import (
     get_nn_from_ddp_module,
-    get_distributed_params,
     get_rank,
     get_distributed_mean,
     check_ddp_wrapped,
