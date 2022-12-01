@@ -64,9 +64,10 @@ def process_components(
         assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
 
         model = maybe_recursive_call(model, "to", device=device)
-        syncbn = distributed_params.pop("syncbn", False)
+        syncbn = distributed_params.get("syncbn", False)
 
         if syncbn:
+            logger.info("Enabling SyncBatchNorm")
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         find_unused = distributed_params.get("find_unused_parameters", False)

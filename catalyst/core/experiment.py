@@ -101,14 +101,11 @@ class IExperiment(ABC):
         Used in :py:mod:`catalyst.utils.distributed.process_components`
         to setup `Nvidia Apex`_ or `PyTorch distributed`_.
 
-        .. _`Nvidia Apex`: https://github.com/NVIDIA/apex
         .. _`PyTorch distributed`:
             https://pytorch.org/docs/stable/distributed.html
 
         Example::
 
-            >>> experiment.distributed_params
-            {"opt_level": "O1", "syncbn": True}  # Apex variant
         """
         pass
 
