@@ -70,23 +70,15 @@ def process_components(
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         find_unused = distributed_params.get("find_unused_parameters", False)
+        local_rank = get_rank()
+        
         model = nn.parallel.DistributedDataParallel(
             model,
             device_ids=[local_rank],
             output_device=local_rank,
             find_unused_parameters=find_unused,
         )
-    else:
-        # data parallel run (dp) (with apex support)
-        if torch.cuda.device_count() > 1 and device.type != "cpu" and device.index is None:
-            if isinstance(model, nn.Module):
-                model = nn.DataParallel(model)
-            elif isinstance(model, dict):
-                model = {k: nn.DataParallel(v) for k, v in model.items()}
-            else:
-                raise NotImplementedError()
-
-        model: Model = maybe_recursive_call(model, "to", device=device)
+  
 
     return model, criterion, optimizer, device
 
