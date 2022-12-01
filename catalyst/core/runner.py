@@ -574,8 +574,8 @@ class IRunner(ABC, FrozenClass):
     @staticmethod
     def _get_experiment_components(
         experiment: IExperiment,
-        stage: str = None,
-        device: Device = None,
+        stage: str,
+        device: Device,
     ) -> Tuple[Model, Criterion, Optimizer, Device]:
         """
         Inner method for `Experiment` components preparation.

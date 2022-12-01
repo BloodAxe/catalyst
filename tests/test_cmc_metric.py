@@ -66,9 +66,7 @@ TEST_DATA_LESS_BIG = (
 )
 
 
-@pytest.mark.parametrize(
-    "distance_matrix,conformity_matrix,topk,expected", TEST_DATA_SIMPLE
-)
+@pytest.mark.parametrize("distance_matrix,conformity_matrix,topk,expected", TEST_DATA_SIMPLE)
 def test_metric_count(distance_matrix, conformity_matrix, topk, expected):
     """Simple test"""
     out = cmc_score_count(

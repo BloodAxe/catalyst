@@ -30,9 +30,7 @@ def test_reducelronplateaucallback():
     )
 
     model = nn.Sequential(
-        collections.OrderedDict(
-            [("fc1", nn.Linear(32, 32)), ("fc2", nn.Linear(32, 1)), ("act", nn.ReLU())]
-        )
+        collections.OrderedDict([("fc1", nn.Linear(32, 32)), ("fc2", nn.Linear(32, 1)), ("act", nn.ReLU())])
     )
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(
@@ -74,18 +72,14 @@ def test_reducelronplateaucallback():
     )
 
     print(optimizer.param_groups[0]["lr"])
-    assert (
-        math.fabs(optimizer.param_groups[0]["lr"] - 1e-1 * 0.5 * 0.5 * 0.5 * 0.5) < 1e-6
-    )
+    assert math.fabs(optimizer.param_groups[0]["lr"] - 1e-1 * 0.5 * 0.5 * 0.5 * 0.5) < 1e-6
 
 
 def test_cosinedecayschedulercallback():
     """Tests CosineDecaySchedulerCallback."""
 
     model = nn.Sequential(
-        collections.OrderedDict(
-            [("fc1", nn.Linear(32, 32)), ("fc2", nn.Linear(32, 1)), ("act", nn.ReLU())]
-        )
+        collections.OrderedDict([("fc1", nn.Linear(32, 32)), ("fc2", nn.Linear(32, 1)), ("act", nn.ReLU())])
     )
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(

@@ -12,9 +12,7 @@ from catalyst.utils.distributed import get_nn_from_ddp_module
 from catalyst.utils.misc import maybe_recursive_call
 
 
-def pack_checkpoint(
-    model=None, criterion=None, optimizer=None, scheduler=None, **kwargs
-):
+def pack_checkpoint(model=None, criterion=None, optimizer=None, scheduler=None, **kwargs):
 
     checkpoint = kwargs
 
@@ -46,9 +44,7 @@ def pack_checkpoint(
     return checkpoint
 
 
-def unpack_checkpoint(
-    checkpoint, model=None, criterion=None, optimizer=None, scheduler=None
-) -> None:
+def unpack_checkpoint(checkpoint, model=None, criterion=None, optimizer=None, scheduler=None) -> None:
     """Load checkpoint from file and unpack the content to a model
     (if not None), criterion (if not None), optimizer (if not None),
     scheduler (if not None).

@@ -8,7 +8,6 @@ import torch.distributed
 from packaging.version import parse, Version
 from torch import nn
 
-from catalyst.utils.torch import get_available_gpus
 
 
 def check_ddp_wrapped(model: nn.Module) -> bool:
@@ -89,8 +88,6 @@ def get_distributed_mean(value: Union[float, torch.Tensor]):
         torch.distributed.all_reduce(value)
         value = float(value.item() / torch.distributed.get_world_size())
     return value
-
-
 
 
 __all__ = [

@@ -1,4 +1,5 @@
 import copy
+import logging
 from typing import Dict, Tuple
 
 import torch
@@ -13,6 +14,8 @@ from catalyst.utils.distributed import (
 )
 from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.torch import get_device
+
+logger = logging.getLogger("catalyst.process_components")
 
 
 def process_components(
@@ -47,6 +50,7 @@ def process_components(
 
     if device is None:
         device = get_device()
+        logger.info(f"Target device is not specified. Using default device {device}")
     elif isinstance(device, str):
         device = torch.device(device)
 
@@ -57,14 +61,9 @@ def process_components(
         pass
     elif get_rank() >= 0:
         # distributed data parallel run (ddp) (with apex support)
-        assert isinstance(
-            model, nn.Module
-        ), "Distributed training is not available for KV model"
+        assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
 
-        local_rank = distributed_params.pop("local_rank", 0) or 0
-        device = f"cuda:{local_rank}"
         model = maybe_recursive_call(model, "to", device=device)
-
         syncbn = distributed_params.pop("syncbn", False)
 
         if syncbn:
@@ -79,11 +78,7 @@ def process_components(
         )
     else:
         # data parallel run (dp) (with apex support)
-        if (
-            torch.cuda.device_count() > 1
-            and device.type != "cpu"
-            and device.index is None
-        ):
+        if torch.cuda.device_count() > 1 and device.type != "cpu" and device.index is None:
             if isinstance(model, nn.Module):
                 model = nn.DataParallel(model)
             elif isinstance(model, dict):
@@ -91,7 +86,7 @@ def process_components(
             else:
                 raise NotImplementedError()
 
-    model: Model = maybe_recursive_call(model, "to", device=device)
+        model: Model = maybe_recursive_call(model, "to", device=device)
 
     return model, criterion, optimizer, device
 

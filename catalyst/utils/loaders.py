@@ -54,7 +54,6 @@ def get_native_batch_from_loaders(
     return output
 
 
-
 def validate_loaders(loaders: Dict[str, DataLoader]) -> Dict[str, DataLoader]:
     """
     Check pytorch dataloaders for distributed setup.

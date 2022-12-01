@@ -20,12 +20,10 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
     ):
         super().__init__(order=CallbackOrder.scheduler, node=CallbackNode.all)
         self.final_lr_fraction = final_lr_fraction
-        
+
         self.warmup_num_steps = warmup_num_steps
         self.warmup_lr_fraction = warmup_lr_fraction
-        self.warmup_lr_interpolation_factors = np.linspace(
-            warmup_lr_fraction, 1.0, num=warmup_num_steps
-        )
+        self.warmup_lr_interpolation_factors = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
         self.original_learning_rates = None
 
     def __repr__(self):
@@ -33,11 +31,9 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         if self.warmup_num_steps:
             main_desc += f" Warmup from {self.final_lr_fraction}x LR for {self.warmup_num_steps} steps."
         return main_desc
-    
+
     def on_stage_start(self, runner: IRunner):
-        self.original_learning_rates = [
-            pg["lr"] for pg in runner.optimizer.param_groups
-        ]
+        self.original_learning_rates = [pg["lr"] for pg in runner.optimizer.param_groups]
 
         self.total_training_steps = len(runner.loaders["train"]) * runner.num_epochs
 
@@ -48,15 +44,11 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         if runner.global_grad_update_step < self.warmup_num_steps:
             scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
 
-            for original_lr, pg in zip(
-                self.original_learning_rates, runner.optimizer.param_groups
-            ):
+            for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
                 pg["lr"] = original_lr * scale
         else:
             training_fraction = runner.global_batch_step / self.total_training_steps
             scale = math.cos(training_fraction * math.pi / 2)
             lr_scale = scale * 1.0 + (1 - scale) * self.final_lr_fraction
 
-            scale_lr_for_param_groups(
-                runner.optimizer.param_groups, self.original_learning_rates, lr_scale
-            )
+            scale_lr_for_param_groups(runner.optimizer.param_groups, self.original_learning_rates, lr_scale)

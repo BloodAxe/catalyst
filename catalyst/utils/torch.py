@@ -59,44 +59,6 @@ def get_device() -> torch.device:
     return torch.device(device)
 
 
-def get_available_gpus():
-    """Array of available GPU ids.
-
-    Examples:
-        >>> os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"
-        >>> get_available_gpus()
-        [0, 2]
-
-        >>> os.environ["CUDA_VISIBLE_DEVICES"] = "0,-1,1"
-        >>> get_available_gpus()
-        [0]
-
-        >>> os.environ["CUDA_VISIBLE_DEVICES"] = ""
-        >>> get_available_gpus()
-        []
-
-        >>> os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-        >>> get_available_gpus()
-        []
-
-    Returns:
-        iterable: available GPU ids
-    """
-    if "CUDA_VISIBLE_DEVICES" in os.environ:
-        result = os.environ["CUDA_VISIBLE_DEVICES"].split(",")
-        result = [id_ for id_ in result if id_ != ""]
-        # invisible GPUs
-        # https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars
-        if -1 in result:
-            index = result.index(-1)
-            result = result[:index]
-    elif torch.cuda.is_available():
-        result = list(range(torch.cuda.device_count()))
-    else:
-        result = []
-    return result
-
-
 def get_activation_fn(activation: str = None):
     """Returns the activation function from ``torch.nn`` by its name."""
     if activation is None or activation.lower() == "none":
@@ -341,7 +303,6 @@ __all__ = [
     "get_optimizable_params",
     "get_param_group_params",
     "get_device",
-    "get_available_gpus",
     "OptimizerParamGroupParams",
     "get_activation_fn",
     "any2device",

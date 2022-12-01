@@ -56,9 +56,7 @@ class ExponentialMovingAverage:
             `model.parameters()`.
           decay: The exponential decay.
         """
-        self.ema_params = collections.OrderedDict(
-            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
-        )
+        self.ema_params = collections.OrderedDict([(k, p.clone().detach()) for k, p in parameters if p.requires_grad])
 
     @torch.no_grad()
     def update(self, parameters: collections.OrderedDict, decay: float):
@@ -71,17 +69,13 @@ class ExponentialMovingAverage:
             parameters used to initialize this object.
         """
 
-        parameters = collections.OrderedDict(
-            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
-        )
+        parameters = collections.OrderedDict([(k, p.clone().detach()) for k, p in parameters if p.requires_grad])
 
         if parameters.keys() != self.ema_params.keys():
             raise RuntimeError("Keys in EMA model and current model does not match")
 
         for key in self.ema_params.keys():
-            self.ema_params[key].copy_(
-                self.weighted_sum(self.ema_params[key], parameters[key].detach(), decay)
-            )
+            self.ema_params[key].copy_(self.weighted_sum(self.ema_params[key], parameters[key].detach(), decay))
 
     def copy_to(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]]):
         """
@@ -94,9 +88,7 @@ class ExponentialMovingAverage:
             recipient_param.data.copy_(self.ema_params[key])
 
     @classmethod
-    def weighted_sum(
-        cls, averaged_weights: Tensor, current_weights: Tensor, p: float
-    ) -> Tensor:
+    def weighted_sum(cls, averaged_weights: Tensor, current_weights: Tensor, p: float) -> Tensor:
         return p * averaged_weights + (1.0 - p) * current_weights
 
 
@@ -151,8 +143,7 @@ class EMACallback(Callback):
     def on_grad_step_end(self, runner: IRunner):
         if not runner.is_train_loader:
             raise RuntimeError(
-                "A on_grad_step_end called from non-train loader. "
-                "This is likey a bug in the library"
+                "A on_grad_step_end called from non-train loader. " "This is likey a bug in the library"
             )
 
         decay = self.decay(

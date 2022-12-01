@@ -31,9 +31,7 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
 
         self.warmup_num_steps = warmup_num_steps
         self.warmup_lr_fraction = warmup_lr_fraction
-        self.warmup_lr_interpolation_factors = np.linspace(
-            warmup_lr_fraction, 1.0, num=warmup_num_steps
-        )
+        self.warmup_lr_interpolation_factors = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
         self.original_learning_rates = None
 
         if minimize:
@@ -46,9 +44,7 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
         return main_desc
 
     def on_stage_start(self, runner: IRunner):
-        self.original_learning_rates = [
-            pg["lr"] for pg in runner.optimizer.param_groups
-        ]
+        self.original_learning_rates = [pg["lr"] for pg in runner.optimizer.param_groups]
 
         self.epochs_without_improvement = 0
         self.best_value = None
@@ -59,9 +55,7 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
 
         if runner.global_grad_update_step < self.warmup_num_steps:
             scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
-            scale_lr_for_param_groups(
-                runner.optimizer.param_groups, self.original_learning_rates, scale
-            )
+            scale_lr_for_param_groups(runner.optimizer.param_groups, self.original_learning_rates, scale)
 
     def on_epoch_start(self, runner: IRunner):
         if self.epochs_without_improvement >= self.patience:

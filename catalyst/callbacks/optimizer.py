@@ -20,9 +20,7 @@ __all__ = [
 
 
 @torch.no_grad()
-def update_to_weight_ratio(
-    model: nn.Module, optimizer: Optimizer, prefix: str
-) -> Dict[str, float]:
+def update_to_weight_ratio(model: nn.Module, optimizer: Optimizer, prefix: str) -> Dict[str, float]:
     """
     Compute update to weight ratio to check whether model is training fast enough
 
@@ -119,8 +117,7 @@ class OptimizerCallback(IOptimizerCallback):
         assert metric_key is None or loss_key is None
         if loss_key is not None:
             warnings.warn(
-                "OptimizerCallback: "
-                "`loss_key` is now deprecated in favor `metric_key`",
+                "OptimizerCallback: " "`loss_key` is now deprecated in favor `metric_key`",
                 stacklevel=2,
             )
         self.metric_key: str = metric_key or loss_key or "loss"
@@ -173,14 +170,10 @@ class OptimizerCallback(IOptimizerCallback):
 
         # Log
         if self.log_grad_norm:
-            grad_norm_dict = grad_norm(
-                runner.model, self.grad_norm_prefix, self.grad_norm_type
-            )
+            grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
             runner.batch_metrics.update(**grad_norm_dict)
 
-            update_to_weight_dict = update_to_weight_ratio(
-                runner.model, optimizer, self.update_to_weight_prefix
-            )
+            update_to_weight_dict = update_to_weight_ratio(runner.model, optimizer, self.update_to_weight_prefix)
             runner.batch_metrics.update(**update_to_weight_dict)
 
         # Step
@@ -273,8 +266,7 @@ class AMPOptimizerCallback(IOptimizerCallback):
         assert metric_key is None or loss_key is None
         if loss_key is not None:
             warnings.warn(
-                "OptimizerCallback: "
-                "`loss_key` is now deprecated in favor `metric_key`",
+                "OptimizerCallback: " "`loss_key` is now deprecated in favor `metric_key`",
                 stacklevel=2,
             )
         self.metric_key: str = metric_key or loss_key or "loss"
@@ -322,14 +314,10 @@ class AMPOptimizerCallback(IOptimizerCallback):
                     torch.nn.utils.clip_grad_norm_(group["params"], **grad_clip_params)
 
             if self.log_grad_norm:
-                grad_norm_dict = grad_norm(
-                    runner.model, self.grad_norm_prefix, self.grad_norm_type
-                )
+                grad_norm_dict = grad_norm(runner.model, self.grad_norm_prefix, self.grad_norm_type)
                 runner.batch_metrics.update(**grad_norm_dict)
 
-                update_to_weight_dict = update_to_weight_ratio(
-                    runner.model, optimizer, self.update_to_weight_prefix
-                )
+                update_to_weight_dict = update_to_weight_ratio(runner.model, optimizer, self.update_to_weight_prefix)
                 runner.batch_metrics.update(**update_to_weight_dict)
 
         self.scaler.step(optimizer)
@@ -438,9 +426,7 @@ class OptimizerLoggerCallback(Callback):
         if not runner.is_train_loader:
             return
 
-        _optimizer: torch.optim.Optimizer = runner.get_attr(
-            key="optimizer", inner_key=self.optimizer_key
-        )
+        _optimizer: torch.optim.Optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
 
         prefix = "_optimizer"
         if self.optimizer_key is not None:
@@ -450,16 +436,10 @@ class OptimizerLoggerCallback(Callback):
             pg_name = pg["name"] if "name" in pg else str(pg_index)
             pg_params = get_param_group_params(pg)
 
-            runner.batch_metrics[
-                f"{prefix}/{pg_name}/learning_rate"
-            ] = pg_params.learning_rate
+            runner.batch_metrics[f"{prefix}/{pg_name}/learning_rate"] = pg_params.learning_rate
 
             if pg_params.weight_decay is not None:
-                runner.batch_metrics[
-                    f"{prefix}/{pg_name}/weight_decay"
-                ] = pg_params.weight_decay
+                runner.batch_metrics[f"{prefix}/{pg_name}/weight_decay"] = pg_params.weight_decay
 
             if pg_params.momentum is not None:
-                runner.batch_metrics[
-                    f"{prefix}/{pg_name}/momentum"
-                ] = pg_params.momentum
+                runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
