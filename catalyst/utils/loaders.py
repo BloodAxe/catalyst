@@ -54,36 +54,6 @@ def get_native_batch_from_loaders(
     return output
 
 
-def _force_make_distributed_loader(loader: DataLoader) -> DataLoader:
-    """
-    Transfers loader to distributed mode. Experimental feature.
-
-    Args:
-        loader: pytorch dataloder
-
-    Returns:
-        DataLoader: pytorch dataloder with distributed sampler.
-    """
-    from catalyst.data.sampler import DistributedSamplerWrapper
-
-    sampler = (
-        DistributedSampler(dataset=loader.dataset)
-        if getattr(loader, "sampler", None) is not None
-        else DistributedSamplerWrapper(sampler=loader.sampler)
-    )
-    loader = DataLoader(
-        dataset=copy(loader.dataset),
-        batch_size=loader.batch_size,
-        # shuffle=loader.shuffle,
-        sampler=sampler,
-        # batch_sampler=loader.batch_sampler,
-        num_workers=loader.num_workers,
-        # collate_fn=loader.collate_fn,
-        pin_memory=loader.pin_memory,
-        drop_last=loader.drop_last,
-    )
-    return loader
-
 
 def validate_loaders(loaders: Dict[str, DataLoader]) -> Dict[str, DataLoader]:
     """

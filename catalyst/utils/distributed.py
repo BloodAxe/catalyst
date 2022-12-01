@@ -28,9 +28,11 @@ def check_torch_distributed_initialized() -> bool:
     """Checks if torch.distributed is available and initialized."""
     return torch.distributed.is_available() and torch.distributed.is_initialized()
 
+
 def maybe_torch_distributed_barrier():
     if check_torch_distributed_initialized():
         torch.distributed.barrier()
+
 
 def check_slurm_available():
     """Checks if slurm is available."""
@@ -59,12 +61,12 @@ def get_rank() -> int:
     Returns the rank of the current worker.
 
     Returns:
-        int: ``rank`` if torch.distributed is initialized, otherwise ``-1``
+        int: ``rank`` if torch.distributed is initialized, otherwise ``0``
     """
     if check_torch_distributed_initialized():
         return torch.distributed.get_rank()
     else:
-        return -1
+        return 0
 
 
 def get_distributed_mean(value: Union[float, torch.Tensor]):
@@ -89,66 +91,6 @@ def get_distributed_mean(value: Union[float, torch.Tensor]):
     return value
 
 
-def get_distributed_params():
-    """Returns distributed params for experiment run.
-
-    Returns:
-        dictionary with distributed params
-    """
-    master_port = str(random.randint(5 * 10**4, 6 * 10**4))
-    master_addr = "127.0.0.1"
-    cur_node, num_nodes = 0, 1
-
-    os.environ["MASTER_ADDR"] = os.getenv("MASTER_ADDR", master_addr)
-    os.environ["MASTER_PORT"] = os.getenv("MASTER_PORT", master_port)
-
-    workers_per_node = torch.cuda.device_count()
-    start_rank = cur_node * workers_per_node
-    world_size = num_nodes * workers_per_node
-
-    local_rank = os.getenv("LOCAL_RANK", None)
-    rank = os.getenv("RANK", None)
-    local_rank, rank = [v and int(v) for v in [local_rank, rank]]
-    world_size = int(os.getenv("WORLD_SIZE", world_size))
-
-    output = OrderedDict(
-        local_rank=local_rank,
-        start_rank=start_rank,
-        rank=rank,
-        world_size=world_size,
-        master_addr=os.environ["MASTER_ADDR"],
-        master_port=os.environ["MASTER_PORT"],
-    )
-
-    return output
-
-
-def get_distributed_env(
-    local_rank: int,
-    rank: int,
-    world_size: int,
-    use_cuda_visible_devices: bool = True,
-):
-    """Returns environment copy with extra distributed settings.
-
-    Args:
-        local_rank: worker local rank
-        rank: worker global rank
-        world_size: worker world size
-        use_cuda_visible_devices: boolean flag to use available GPU devices
-
-    Returns:
-        updated environment copy
-    """
-    env = os.environ.copy()
-    env["RANK"] = str(rank)
-    env["WORLD_SIZE"] = str(world_size)
-    env["LOCAL_RANK"] = str(local_rank)
-    if use_cuda_visible_devices:
-        available_gpus = get_available_gpus()
-        env["LOCAL_RANK"] = "0"
-        env["CUDA_VISIBLE_DEVICES"] = str(available_gpus[local_rank])
-    return env
 
 
 __all__ = [
@@ -160,6 +102,4 @@ __all__ = [
     "get_nn_from_ddp_module",
     "get_rank",
     "get_distributed_mean",
-    "get_distributed_env",
-    "get_distributed_params",
 ]

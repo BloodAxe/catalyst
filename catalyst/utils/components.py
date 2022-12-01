@@ -45,8 +45,6 @@ def process_components(
             nn.ModuleDict for DataParallel not implemented yet
     """
     distributed_params = distributed_params or {}
-    distributed_params = copy.deepcopy(distributed_params)
-    distributed_params.update(get_distributed_params())
 
     if device is None:
         device = get_device()

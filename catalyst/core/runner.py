@@ -26,12 +26,11 @@ from catalyst.typing import (
     Scheduler,
 )
 from catalyst.utils.components import process_components
-from catalyst.utils.distributed import get_rank,maybe_torch_distributed_barrier
+from catalyst.utils.distributed import get_rank, maybe_torch_distributed_barrier
 from catalyst.utils.loaders import validate_loaders
 from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.seed import set_global_seed
 from catalyst.utils.torch import any2device
-
 
 
 class RunnerException(Exception):
@@ -446,7 +445,7 @@ class IRunner(ABC, FrozenClass):
 
         # distributed info
         self.distributed_rank: int = get_rank()
-        self.is_distributed_master: bool = ~(self.distributed_rank > 0)
+        self.is_distributed_master: bool = self.distributed_rank == 0
         self.is_distributed_worker: bool = self.distributed_rank > 0
         # experiment info
         self.global_sample_step: int = 0
@@ -460,9 +459,7 @@ class IRunner(ABC, FrozenClass):
         # stage info
         self.num_epochs: int = num_epochs
         self.stage_name: str = stage
-        self.is_infer_stage: bool = self.stage_name.startswith(
-            SETTINGS.stage_infer_prefix
-        )
+        self.is_infer_stage: bool = self.stage_name.startswith(SETTINGS.stage_infer_prefix)
         # epoch info
         self.epoch: int = 1
         # loader info
@@ -500,19 +497,11 @@ class IRunner(ABC, FrozenClass):
         self.experiment: IExperiment = None
 
     def get_callback(self, callback_cls):
-        cbs = [
-            callback
-            for callback in self.callbacks.values()
-            if isinstance(callback, callback_cls)
-        ]
+        cbs = [callback for callback in self.callbacks.values() if isinstance(callback, callback_cls)]
         if len(cbs) == 0:
-            raise RuntimeError(
-                f"Callback of class {callback_cls} was not found in callbacks"
-            )
+            raise RuntimeError(f"Callback of class {callback_cls} was not found in callbacks")
         if len(cbs) > 1:
-            raise RuntimeError(
-                f"More than one callback of class {callback_cls} was found in callbacks"
-            )
+            raise RuntimeError(f"More than one callback of class {callback_cls} was found in callbacks")
         return cbs[0]
 
     @property
@@ -577,16 +566,10 @@ class IRunner(ABC, FrozenClass):
         elif isinstance(value, type(None)):
             self._device = None
         else:
-            raise TypeError(
-                f"Invalid value type "
-                f"must be `str` or `torch.device` "
-                f"got '{type(value)}'"
-            )
+            raise TypeError(f"Invalid value type " f"must be `str` or `torch.device` " f"got '{type(value)}'")
 
         if self._model is not None:
-            self._model = maybe_recursive_call(
-                self._model, "to", device=self._device or "cpu"
-            )
+            self._model = maybe_recursive_call(self._model, "to", device=self._device or "cpu")
 
     @staticmethod
     def _get_experiment_components(
@@ -801,9 +784,7 @@ class IRunner(ABC, FrozenClass):
             raise RunnerException(f"DataLoader with name {self.loader_name} is empty.")
 
         self.loader_batch_size = (
-            loader.batch_sampler.batch_size
-            if loader.batch_sampler is not None
-            else loader.batch_size
+            loader.batch_sampler.batch_size if loader.batch_sampler is not None else loader.batch_size
         )
 
         self.loader_sample_step = 0
@@ -835,8 +816,7 @@ class IRunner(ABC, FrozenClass):
         self.is_infer_stage = self.stage_name.startswith("infer")
         if not self.is_infer_stage:
             assert self.valid_loader in self.loaders.keys(), (
-                f"'{self.valid_loader}' "
-                f"should be in provided loaders: {list(self.loaders.keys())}"
+                f"'{self.valid_loader}' " f"should be in provided loaders: {list(self.loaders.keys())}"
             )
         else:
             assert not any(
@@ -872,15 +852,10 @@ class IRunner(ABC, FrozenClass):
             else:
                 raise ValueError()
 
-            if (
-                isinstance(loader.sampler, DistributedSampler)
-                and not self.is_infer_stage
-            ):
+            if isinstance(loader.sampler, DistributedSampler) and not self.is_infer_stage:
                 loader.sampler.set_epoch(self.epoch)
 
-            set_global_seed(
-                self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
-            )
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
 
             maybe_torch_distributed_barrier()
             self.run_event("on_loader_start")
@@ -907,9 +882,7 @@ class IRunner(ABC, FrozenClass):
 
         self.run_event("on_stage_start")
         while self.epoch < self.num_epochs + 1:
-            set_global_seed(
-                self.experiment.initial_seed + self.global_epoch + 1 + get_rank()
-            )
+            set_global_seed(self.experiment.initial_seed + self.global_epoch + 1 + get_rank())
 
             maybe_torch_distributed_barrier()
             self.run_event("on_epoch_start")
@@ -958,8 +931,7 @@ class IRunner(ABC, FrozenClass):
 
             def _exception_handler_check(callbacks: Union[OrderedDict, Dict]):
                 return callbacks is not None and any(
-                    issubclass(x.__class__, ExceptionCallback)
-                    for x in callbacks.values()
+                    issubclass(x.__class__, ExceptionCallback) for x in callbacks.values()
                 )
 
             if _exception_handler_check(getattr(self, "callbacks", None)):
@@ -996,19 +968,18 @@ class IStageBasedRunner(IRunner):
         self.loaders = loaders
 
         set_global_seed(self.experiment.initial_seed)
-        (model, criterion, optimizer, device,) = self._get_experiment_components(
-            experiment=self.experiment, stage=stage, device=self.device
-        )
+        (
+            model,
+            criterion,
+            optimizer,
+            device,
+        ) = self._get_experiment_components(experiment=self.experiment, stage=stage, device=self.device)
 
         set_global_seed(self.experiment.initial_seed)
-        callbacks = self._get_experiment_callbacks(
-            experiment=self.experiment, stage=stage
-        )
+        callbacks = self._get_experiment_callbacks(experiment=self.experiment, stage=stage)
 
         migrating_params = dict(**self.experiment.get_stage_params(stage))
-        migrate_from_previous_stage = migrating_params.get(
-            "migrate_from_previous_stage", True
-        )
+        migrate_from_previous_stage = migrating_params.get("migrate_from_previous_stage", True)
         if migrate_from_previous_stage and getattr(self, "callbacks", None) is not None:
             for key, value in self.callbacks.items():
                 if value.scope == CallbackScope.experiment:

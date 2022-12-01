@@ -1,3 +1,4 @@
+import collections
 from collections import OrderedDict
 from typing import Dict, List, Union
 
@@ -61,7 +62,7 @@ def sort_callbacks_by_order(callbacks: Union[List, Dict, OrderedDict]) -> Ordere
     return output
 
 
-def filter_callbacks_by_node(callbacks: Union[Dict, OrderedDict]) -> Union[Dict, OrderedDict]:
+def filter_callbacks_by_node(callbacks: Union[Dict, OrderedDict]) -> collections.OrderedDict:
     """
     Filters callbacks based on running node.
     Deletes worker-only callbacks from ``CallbackNode.Master``
@@ -71,20 +72,22 @@ def filter_callbacks_by_node(callbacks: Union[Dict, OrderedDict]) -> Union[Dict,
         callbacks (Union[Dict, OrderedDict]): callbacks
 
     Returns:
-        Union[Dict, OrderedDict]: filtered callbacks dictionary.
+        OrderedDict: filtered callbacks dictionary.
     """
-    # distributed run setting
-    output = callbacks.copy()
     rank = get_rank()
-    if rank == 0:  # master node
-        # remove worker-only callbacks on master node
-        for k in list(filter(lambda c: output[c].node == CallbackNode.worker, output)):
-            del output[k]
-    elif rank > 0:  # worker node
-        # remove master-only callbacks on worker nodes
-        for k in list(filter(lambda c: output[c].node == CallbackNode.master, output)):
-            del output[k]
-    return output
+    if rank == 0:  # master node or single-gpu mode
+        output = [
+            (key, callback)
+            for key, callback in callbacks.items()
+            if callback.node in {CallbackNode.all, CallbackNode.master}
+        ]
+    else:  # worker node
+        output = [
+            (key, callback)
+            for key, callback in callbacks.items()
+            if callback.node in {CallbackNode.all, CallbackNode.worker}
+        ]
+    return collections.OrderedDict(output)
 
 
 __all__ = [
