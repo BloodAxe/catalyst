@@ -4,7 +4,7 @@ from typing import Dict, Union
 
 from torch.utils.data import DataLoader, DistributedSampler
 
-from catalyst.utils.distributed import get_rank
+from catalyst.utils.distributed import get_rank, check_torch_distributed_initialized
 
 
 def get_native_batch_from_loader(loader: DataLoader, batch_index: int = 0):
@@ -70,7 +70,7 @@ def validate_loaders(loaders: Dict[str, DataLoader]) -> Dict[str, DataLoader]:
     from catalyst.data.sampler import DistributedSamplerWrapper
 
     rank = get_rank()
-    if rank >= 0:
+    if check_torch_distributed_initialized():
         for key, value in loaders.items():
             if not isinstance(value.sampler, (DistributedSampler, DistributedSamplerWrapper)):
                 warnings.warn(

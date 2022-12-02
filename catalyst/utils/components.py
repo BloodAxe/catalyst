@@ -11,6 +11,7 @@ from catalyst.utils.distributed import (
     check_amp_available,
     check_ddp_wrapped,
     get_rank,
+    check_torch_distributed_initialized,
 )
 from catalyst.utils.misc import maybe_recursive_call
 from catalyst.utils.torch import get_device
@@ -59,7 +60,7 @@ def process_components(
 
     if check_ddp_wrapped(model):
         pass
-    elif get_rank() >= 0:
+    elif check_torch_distributed_initialized():
         # distributed data parallel run (ddp) (with apex support)
         assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
 
