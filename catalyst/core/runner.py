@@ -450,6 +450,7 @@ class IRunner(ABC, FrozenClass):
         # experiment info
         self.global_sample_step: int = 0
         self.global_batch_step: int = 0
+        self.global_train_step: int = 0
         self.global_grad_update_step: int = 0
         self.global_epoch: int = 1
         self.verbose: bool = verbose
@@ -790,6 +791,8 @@ class IRunner(ABC, FrozenClass):
         self.loader_sample_step = 0
         for i, batch in enumerate(loader):
             self.global_batch_step += 1
+            if self.is_train_loader:
+                self.global_train_step += 1
             self.loader_batch_step = i + 1
             self._run_batch(batch)
             if self.need_early_stop:

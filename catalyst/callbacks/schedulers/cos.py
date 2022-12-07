@@ -1,5 +1,6 @@
+import copy
 import math
-
+import copy
 import numpy as np
 
 from catalyst.callbacks.scheduler import ISchedulerCallback
@@ -33,7 +34,7 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         return main_desc
 
     def on_stage_start(self, runner: IRunner):
-        self.original_learning_rates = [pg["lr"] for pg in runner.optimizer.param_groups]
+        self.original_learning_rates = copy.deepcopy([pg["lr"] for pg in runner.optimizer.param_groups])
 
         self.total_training_steps = len(runner.loaders["train"]) * runner.num_epochs
 
@@ -47,10 +48,23 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
             for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
                 pg["lr"] = original_lr * scale
         else:
-            training_fraction = (runner.global_batch_step - self.warmup_num_steps) / (
+            # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
+            training_fraction = (runner.global_train_step - self.warmup_num_steps) / (
                 self.total_training_steps - self.warmup_num_steps
             )
-            scale = math.cos(training_fraction * math.pi / 2)
-            lr_scale = scale * 1.0 + (1 - scale) * self.final_lr_fraction
+            if training_fraction < 0 or training_fraction > 1:
+                raise RuntimeError(
+                    f"Detected incorrect training_fraction {training_fraction} for cosine scheduler. It must stay in range [0...1]. "
+                    f"Incorrect value computed on global_batch_step {runner.global_batch_step}, global_grad_update_step {runner.global_grad_update_step}, epoch {runner.global_epoch}"
+                )
 
-            scale_lr_for_param_groups(runner.optimizer.param_groups, self.original_learning_rates, lr_scale)
+            cosine_decay = math.cos(training_fraction * math.pi / 2)
+            # Interpolate LR fraction between 1 and self.final_lr_fraction
+            lr_fraction = cosine_decay + (1.0 - cosine_decay) * self.final_lr_fraction
+
+            if lr_fraction < 0 or lr_fraction > 1.0:
+                raise RuntimeError(
+                    f"Detected incorrect lr_fraction {lr_fraction} for cosine scheduler. It must stay in range [0...1]. "
+                    f"Incorrect value computed on global_batch_step {runner.global_batch_step}, global_grad_update_step {runner.global_grad_update_step}, epoch {runner.global_epoch}"
+                )
+            scale_lr_for_param_groups(runner.optimizer.param_groups, self.original_learning_rates, lr_fraction)
