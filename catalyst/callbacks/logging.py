@@ -55,16 +55,17 @@ class VerboseLogger(ILoggerCallback):
             raise ValueError(error_message)
 
     def _need_show(self, key: str):
-        not_is_never_shown: bool = key not in self.never_show
-        is_always_shown: bool = key in self.always_show
+        not_blacklisted: bool = key not in self.never_show
+        is_whitelisted: bool = key in self.always_show
         not_basic = not (
             key.startswith("_base")
             or key.startswith("_timer")
             or key.startswith("_grad_norm")
+            or key.startswith("_optimizer")
             or key.startswith("_update_to_weight")
         )
 
-        result = not_is_never_shown and (is_always_shown or not_basic)
+        result = not_blacklisted and (is_whitelisted or not_basic)
 
         return result
 

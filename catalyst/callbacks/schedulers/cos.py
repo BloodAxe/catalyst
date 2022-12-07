@@ -47,7 +47,9 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
             for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
                 pg["lr"] = original_lr * scale
         else:
-            training_fraction = runner.global_batch_step / self.total_training_steps
+            training_fraction = (runner.global_batch_step - self.warmup_num_steps) / (
+                self.total_training_steps - self.warmup_num_steps
+            )
             scale = math.cos(training_fraction * math.pi / 2)
             lr_scale = scale * 1.0 + (1 - scale) * self.final_lr_fraction
 
