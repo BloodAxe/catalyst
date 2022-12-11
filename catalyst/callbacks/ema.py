@@ -1,12 +1,12 @@
 import collections
-import math
 import typing
+
 import numpy as np
 import torch
 from torch import Tensor, nn
 
-from catalyst.core import IRunner, Callback, CallbackOrder
 from catalyst.callbacks.optimizer import IOptimizerCallback
+from catalyst.core import IRunner, Callback, CallbackOrder
 
 __all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay"]
 
@@ -15,6 +15,16 @@ class EMADecay:
     def __call__(self, step: int, total_steps: int):
         raise NotImplementedError
 
+class ThresholdDecay(EMADecay):
+    def __init__(self, decay:float):
+        self.decay = decay
+
+    def __call__(self, step: int, total_steps: int):
+        decay = (step + 1) / (step + 1000)
+        return np.minimum(self.decay, decay)
+
+    def __repr__(self):
+        return f"ThresholdDecay(decay={self.decay})"
 
 class ExpEMADecay(EMADecay):
     def __init__(self, decay, beta):
@@ -59,7 +69,7 @@ class ExponentialMovingAverage:
         self.ema_params = collections.OrderedDict([(k, p.clone().detach()) for k, p in parameters if p.requires_grad])
 
     @torch.no_grad()
-    def update(self, parameters: collections.OrderedDict, decay: float):
+    def update(self, parameters: collections.OrderedDict, ema_value: float):
         """
         Update currently maintained parameters.
         Call this every time the parameters are updated, such as the result of
@@ -75,7 +85,7 @@ class ExponentialMovingAverage:
             raise RuntimeError("Keys in EMA model and current model does not match")
 
         for key in self.ema_params.keys():
-            self.ema_params[key].copy_(self.weighted_sum(self.ema_params[key], parameters[key].detach(), decay))
+            self.ema_params[key].copy_(self.weighted_sum(self.ema_params[key], parameters[key].detach(), ema_value))
 
     def copy_to(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]]):
         """
@@ -89,6 +99,10 @@ class ExponentialMovingAverage:
 
     @classmethod
     def weighted_sum(cls, averaged_weights: Tensor, current_weights: Tensor, p: float) -> Tensor:
+        """
+        Perform weighted sum of averaged weights and current weights using formula:
+        >>> new_weights = p * averaged_weights + (1 - p) * current_weights
+        """
         return p * averaged_weights + (1.0 - p) * current_weights
 
 
@@ -154,3 +168,22 @@ class EMACallback(Callback):
         runner.batch_metrics["_ema/decay"] = decay
 
         self.ema.update(runner.model.named_parameters(), decay)
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    total_steps = 1000000
+    steps = np.linspace(1, total_steps, total_steps, endpoint=True)
+
+    plt.figure()
+
+    for name, ema_algs in [
+        ("beta", BetaDecay(beta=15)),
+        ("threshold",ThresholdDecay(0.9998)),
+        ("exp", ExpEMADecay(decay=0.9998,beta=4))
+    ]:
+        plt.plot(steps, ema_algs(steps, total_steps), label=name)
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
