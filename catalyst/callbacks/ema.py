@@ -15,8 +15,9 @@ class EMADecay:
     def __call__(self, step: int, total_steps: int):
         raise NotImplementedError
 
+
 class ThresholdDecay(EMADecay):
-    def __init__(self, decay:float):
+    def __init__(self, decay: float):
         self.decay = decay
 
     def __call__(self, step: int, total_steps: int):
@@ -25,6 +26,7 @@ class ThresholdDecay(EMADecay):
 
     def __repr__(self):
         return f"ThresholdDecay(decay={self.decay})"
+
 
 class ExpEMADecay(EMADecay):
     def __init__(self, decay, beta):
@@ -169,6 +171,7 @@ class EMACallback(Callback):
 
         self.ema.update(runner.model.named_parameters(), decay)
 
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
@@ -179,8 +182,8 @@ if __name__ == "__main__":
 
     for name, ema_algs in [
         ("beta", BetaDecay(beta=15)),
-        ("threshold",ThresholdDecay(0.9998)),
-        ("exp", ExpEMADecay(decay=0.9998,beta=4))
+        ("threshold", ThresholdDecay(0.9998)),
+        ("exp", ExpEMADecay(decay=0.9998, beta=4)),
     ]:
         plt.plot(steps, ema_algs(steps, total_steps), label=name)
 
