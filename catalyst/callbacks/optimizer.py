@@ -447,5 +447,5 @@ class OptimizerLoggerCallback(Callback):
                 runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
 
         if hasattr(optimizer, "scaler"):
-            scaler:GradScaler = getattr(optimizer, "scaler")
+            scaler: GradScaler = getattr(optimizer, "scaler")
             runner.batch_metrics[f"{prefix}/amp_scale"] = float(scaler.get_scale())
