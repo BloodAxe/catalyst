@@ -323,8 +323,14 @@ class AMPOptimizerCallback(IOptimizerCallback):
                 runner.batch_metrics.update(**update_to_weight_dict)
 
         self.scaler.step(optimizer)
+
+        scaler_scale = float(self.scaler.get_scale())
+
         self.scaler.update()
         runner.global_grad_update_step += 1
+
+        runner.batch_metrics[f"_optimizer/amp_scale"] = scaler_scale
+
 
     def on_stage_start(self, runner: "IRunner") -> None:
         """Checks that the current stage has correct optimizer.
@@ -445,7 +451,3 @@ class OptimizerLoggerCallback(Callback):
 
             if pg_params.momentum is not None:
                 runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
-
-        if hasattr(optimizer, "scaler"):
-            scaler: GradScaler = getattr(optimizer, "scaler")
-            runner.batch_metrics[f"{prefix}/amp_scale"] = float(scaler.get_scale())
