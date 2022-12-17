@@ -3,6 +3,8 @@ import warnings
 from typing import Callable, Dict, Mapping
 
 import torch
+from torch.cuda.amp import GradScaler
+
 from catalyst.core.callback import Callback, CallbackNode, CallbackOrder
 from catalyst.core.runner import IRunner
 from catalyst.typing import Optimizer
@@ -426,13 +428,13 @@ class OptimizerLoggerCallback(Callback):
         if not runner.is_train_loader:
             return
 
-        _optimizer: torch.optim.Optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
+        optimizer: torch.optim.Optimizer = runner.get_attr(key="optimizer", inner_key=self.optimizer_key)
 
         prefix = "_optimizer"
         if self.optimizer_key is not None:
             prefix = f"{prefix}/{self.optimizer_key}"
 
-        for pg_index, pg in enumerate(_optimizer.param_groups):
+        for pg_index, pg in enumerate(optimizer.param_groups):
             pg_name = pg["name"] if "name" in pg else str(pg_index)
             pg_params = get_param_group_params(pg)
 
@@ -443,3 +445,7 @@ class OptimizerLoggerCallback(Callback):
 
             if pg_params.momentum is not None:
                 runner.batch_metrics[f"{prefix}/{pg_name}/momentum"] = pg_params.momentum
+
+        if hasattr(optimizer, "scaler"):
+            scaler:GradScaler = getattr(optimizer, "scaler")
+            runner.batch_metrics[f"{prefix}/amp_scale"] = float(scaler.get_scale())
