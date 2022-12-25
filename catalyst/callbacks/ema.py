@@ -8,7 +8,9 @@ from torch import Tensor, nn
 from catalyst.callbacks.optimizer import IOptimizerCallback
 from catalyst.core import IRunner, Callback, CallbackOrder
 
-__all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay"]
+__all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay", "ThresholdDecay"]
+
+import logging
 
 
 class EMADecay:
@@ -134,6 +136,11 @@ class EMACallback(Callback):
             len(runner.loaders["train"]) * runner.num_epochs
         ) // optimizer_callback.grad_accumulation_steps
 
+        if len(runner.loaders["train"]) % optimizer_callback.grad_accumulation_steps != 0:
+            self.get_callback_logger().warning(
+                "Length of train loader contains non-integer number of gradient updates. "
+                "Last batch would not contribute to grad update."
+            )
         self.ema = ExponentialMovingAverage(
             parameters=runner.model.named_parameters(),
         )
@@ -170,23 +177,3 @@ class EMACallback(Callback):
         runner.batch_metrics["_ema/decay"] = decay
 
         self.ema.update(runner.model.named_parameters(), decay)
-
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    total_steps = 1000000
-    steps = np.linspace(1, total_steps, total_steps, endpoint=True)
-
-    plt.figure()
-
-    for name, ema_algs in [
-        ("beta", BetaDecay(beta=15)),
-        ("threshold", ThresholdDecay(0.9998)),
-        ("exp", ExpEMADecay(decay=0.9998, beta=4)),
-    ]:
-        plt.plot(steps, ema_algs(steps, total_steps), label=name)
-
-    plt.legend()
-    plt.tight_layout()
-    plt.show()

@@ -1,3 +1,4 @@
+import logging
 from enum import IntFlag
 
 
@@ -132,6 +133,13 @@ class Callback:
         self.node = node
         self.order = order
         self.scope = scope
+
+    def get_callback_logger(self) -> logging.Logger:
+        """
+        Get logger for a callback with a name of a logger corresponding to a class name
+        :return: Instance of logging.Logger
+        """
+        return logging.getLogger(self.__class__.__name__)
 
     def on_stage_start(self, runner: "IRunner"):
         """Event handler for stage start.

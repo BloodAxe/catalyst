@@ -1,6 +1,4 @@
 import collections
-import math
-from unittest.mock import MagicMock, PropertyMock
 
 import numpy as np
 import torch.optim
@@ -8,14 +6,12 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from catalyst.callbacks import (
-    ReduceLROnPlateauCallback,
     OptimizerCallback,
     TensorboardLogger,
     OptimizerLoggerCallback,
-    CosineDecaySchedulerCallback,
     EMACallback,
 )
-from catalyst.callbacks.ema import EMADecay, ExpEMADecay, BetaDecay
+from catalyst.callbacks.ema import ExpEMADecay, BetaDecay, ThresholdDecay
 from catalyst.runners import SupervisedRunner
 
 
@@ -134,3 +130,23 @@ def test_ema():
         logdir="./test_ema",
         verbose=True,
     )
+
+
+def test_plot_ema_schedules():
+    import matplotlib.pyplot as plt
+
+    total_steps = 1000000
+    steps = np.linspace(1, total_steps, total_steps, endpoint=True)
+
+    plt.figure()
+
+    for name, ema_algs in [
+        ("beta", BetaDecay(beta=15)),
+        ("threshold", ThresholdDecay(0.9998)),
+        ("exp", ExpEMADecay(decay=0.9998, beta=4)),
+    ]:
+        plt.plot(steps, ema_algs(steps, total_steps), label=name)
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
