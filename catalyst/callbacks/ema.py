@@ -3,14 +3,11 @@ import typing
 
 import numpy as np
 import torch
-from torch import Tensor, nn
-
 from catalyst.callbacks.optimizer import IOptimizerCallback
 from catalyst.core import IRunner, Callback, CallbackOrder
+from torch import Tensor, nn
 
 __all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay", "ThresholdDecay"]
-
-import logging
 
 
 class EMADecay:
@@ -70,36 +67,40 @@ class ExponentialMovingAverage:
             `model.parameters()`.
           decay: The exponential decay.
         """
-        self.ema_params = collections.OrderedDict([(k, p.clone().detach()) for k, p in parameters if p.requires_grad])
+        self.averaged_params = collections.OrderedDict(
+            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
+        )
 
     @torch.no_grad()
-    def update(self, parameters: collections.OrderedDict, ema_value: float):
+    def update(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]], ema_fraction: float):
         """
         Update currently maintained parameters.
         Call this every time the parameters are updated, such as the result of
         the `optimizer.step()` call.
-        Args:
-          parameters: Iterable of `torch.nn.Parameter`; usually the same set of
-            parameters used to initialize this object.
+        parameters: Iterable of `torch.nn.Parameter`; usually the same set of
+                    parameters used to initialize this object.
+        ema_fraction: Weight factor for EMA weights. Model weights get weight 1 - ema_fraction
         """
 
-        parameters = collections.OrderedDict([(k, p.clone().detach()) for k, p in parameters if p.requires_grad])
+        parameters = collections.OrderedDict([(k, p.detach().clone()) for k, p in parameters if p.requires_grad])
 
-        if parameters.keys() != self.ema_params.keys():
+        if parameters.keys() != self.averaged_params.keys():
             raise RuntimeError("Keys in EMA model and current model does not match")
 
-        for key in self.ema_params.keys():
-            self.ema_params[key].copy_(self.weighted_sum(self.ema_params[key], parameters[key].detach(), ema_value))
+        for key in self.averaged_params.keys():
+            self.averaged_params[key].copy_(
+                self.weighted_sum(self.averaged_params[key], parameters[key], ema_fraction)
+            )
 
     def copy_to(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]]):
         """
-        Copies current parameters into given collection of parameters.
+        Copies current EMA parameters into given collection of parameters.
         Args:
           parameters: Iterable of `torch.nn.Parameter`; the parameters to be
             updated with the stored moving averages.
         """
         for key, recipient_param in parameters:
-            recipient_param.data.copy_(self.ema_params[key])
+            recipient_param.data.copy_(self.averaged_params[key])
 
     @classmethod
     def weighted_sum(cls, averaged_weights: Tensor, current_weights: Tensor, p: float) -> Tensor:
@@ -111,10 +112,11 @@ class ExponentialMovingAverage:
 
 
 class EMACallback(Callback):
-    """EMA weights averaging callback.
-    It updates EMA weights after end of each training batch.
-    On validation epoch this callback changes the model for evaluation to EMA-averaged and flip it back to "regular"
-    model on start of training epochs.
+    """Weight averaging callback for exponential weight averaging.
+    On start of training it saves down model params to an in internal storage and update it's weights using EMA rule
+    after each gradient step.
+    On start of train loader it loads weights of regular model back.
+    On start of validation loader it replaces the model state with EMA weights (That is on validation you're getting EMA-model performance metric).
     """
 
     def __repr__(self):
@@ -146,27 +148,18 @@ class EMACallback(Callback):
         )
         self.non_ema_state_dict = None
 
-    def on_stage_end(self, runner: "IRunner"):
-        self.ema = None
-        self.non_ema_state_dict = None
-
-    def on_loader_start(self, runner: "IRunner"):
-        if runner.is_train_loader:
-            # On the start of train loader we load model state dict.
-            # non_ema_state_dict may be None on the first epoch
-            if self.non_ema_state_dict:
-                runner.model.load_state_dict(self.non_ema_state_dict)
-        elif runner.is_valid_loader:
-            self.non_ema_state_dict = runner.model.state_dict()
-            self.ema.copy_to(runner.model.named_parameters())
-
-    def on_loader_end(self, runner: IRunner):
-        pass
+    def _on_train_loader_start(self, runner: "IRunner"):
+        """
+        On the start of train epoch we restore the saved (non-EMA) model state dict.
+        A non_ema_state_dict is None on the first epoch.
+        """
+        if self.non_ema_state_dict is not None:
+            runner.model.load_state_dict(self.non_ema_state_dict)
 
     def on_grad_step_end(self, runner: IRunner):
         if not runner.is_train_loader:
             raise RuntimeError(
-                "A on_grad_step_end called from non-train loader. " "This is likey a bug in the library"
+                "A on_grad_step_end called from non-train loader. This is probably a bug in the library"
             )
 
         decay = self.decay(
@@ -175,5 +168,47 @@ class EMACallback(Callback):
         )
 
         runner.batch_metrics["_ema/decay"] = decay
-
         self.ema.update(runner.model.named_parameters(), decay)
+
+    def _on_train_loader_end(self, runner: "IRunner"):
+        """
+        Save the non-EMA model state to internal state as it will be flipped to EMA version on validation.
+        """
+        self.non_ema_state_dict = runner.model.state_dict()
+
+    def _on_valid_loader_start(self, runner: "IRunner"):
+        """
+        On start of validation we load the weights of EMA model
+        :param runner:
+        :return:
+        """
+        self.ema.copy_to(runner.model.named_parameters())
+
+    def _on_valid_loader_end(self, runner: "IRunner"):
+        """
+        We do nothing on end of validation to ensure that saved checkpoints will be written with EMA weights.
+        Only on the start of new train epoch we may restore the weights of original model.
+        Note this would probably break the resume training functionality. Ideally we should save both ema and non-ema weights.
+        TODO: Implement state_dict() method for all callbacks to allow saving state of each callback.
+
+        :param runner:
+        :return:
+        """
+        pass
+
+    def on_stage_end(self, runner: "IRunner"):
+        self.ema.copy_to(runner.model.named_parameters())
+        self.ema = None
+        self.non_ema_state_dict = None
+
+    def on_loader_start(self, runner: "IRunner"):
+        if runner.is_train_loader:
+            self._on_train_loader_start(runner)
+        elif runner.is_valid_loader:
+            self._on_valid_loader_start(runner)
+
+    def on_loader_end(self, runner: IRunner):
+        if runner.is_train_loader:
+            self._on_train_loader_end(runner)
+        elif runner.is_valid_loader:
+            self._on_valid_loader_end(runner)
