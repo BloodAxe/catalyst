@@ -174,7 +174,10 @@ class EMACallback(Callback):
         """
         Save the non-EMA model state to internal state as it will be flipped to EMA version on validation.
         """
-        self.non_ema_state_dict = runner.model.state_dict()
+        non_ema_state_dict = collections.OrderedDict(
+            [(k, p.detach().clone()) for k, p in runner.model.state_dict().items() if p.requires_grad]
+        )
+        self.non_ema_state_dict = non_ema_state_dict
 
     def _on_valid_loader_start(self, runner: "IRunner"):
         """
