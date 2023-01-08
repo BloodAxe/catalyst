@@ -48,13 +48,13 @@ class AccuracyMetricCallback(Callback):
 
     @torch.no_grad()
     def on_batch_end(self, runner: IRunner):
-        predictions = self.outputs_to_labels(runner.output[self.predictions_key])
+        pred_labels = runner.output[self.predictions_key]
         true_labels = runner.input[self.targets_key].type_as(pred_labels)
 
         if isinstance(self.outputs_to_labels, float):
-            predictions = predictions > self.outputs_to_labels
+            pred_labels = pred_labels > self.outputs_to_labels
         elif callable(self.outputs_to_labels):
-            predictions = self.outputs_to_labels(predictions)
+            pred_labels = self.outputs_to_labels(pred_labels)
 
         true_labels = true_labels.view(-1)
         pred_labels = pred_labels.view(-1)
