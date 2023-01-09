@@ -110,7 +110,7 @@ def test_cosinedecayschedulercallback():
     scheduler = CosineDecaySchedulerCallback(
         warmup_num_steps=(num_epochs * len(loaders["train"]) // batch_size) // 2,
         warmup_lr_fraction=0.01,
-        final_lr_fraction=0.1,
+        final_lr_fraction=0.5,
     )
 
     runner.train(

@@ -9,18 +9,24 @@ from catalyst.core import CallbackOrder, CallbackNode, IRunner
 
 __all__ = ["CosineDecaySchedulerCallback"]
 
-def cosine_scheduler_with_warmup(steps:int, initial_lr:float,final_lr_fraction:float, warmup_lr_fraction:float, warmup_num_steps:int):
+
+def cosine_scheduler_with_warmup(
+    steps: int, initial_lr: float, final_lr_fraction: float, warmup_lr_fraction: float, warmup_num_steps: int
+):
     """
     Cosine decay scheduler with warmup
     """
-    warmup_lrs = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
-    training_fraction = np.arange(steps - warmup_num_steps) / (steps - warmup_num_steps)
+    warmup_lr = initial_lr * warmup_lr_fraction
+    final_lr = initial_lr * final_lr_fraction
+    warmup_lrs = np.linspace(warmup_lr, initial_lr, num=warmup_num_steps)
+    training_fraction = np.linspace(0, 1, num=steps - warmup_num_steps)
 
-    cosine_lr_fraction = np.cos(training_fraction * math.pi / 2)
-    cosine_decay = cosine_lr_fraction * initial_lr + (1-cosine_lr_fraction) * final_lr_fraction
+    cosine_lr_fraction = np.cos(training_fraction * math.pi) / 2 + 0.5
+    cosine_lrs = (initial_lr - final_lr) * cosine_lr_fraction + final_lr
 
-    lr_interpolation_factors = np.concatenate([warmup_lr_interpolation_factors, cosine_decay])
+    lr_interpolation_factors = np.concatenate([warmup_lrs, cosine_lrs])
     return lr_interpolation_factors
+
 
 class CosineDecaySchedulerCallback(ISchedulerCallback):
     total_training_steps: int
@@ -47,7 +53,6 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
     def on_stage_start(self, runner: IRunner):
         self.original_learning_rates = copy.deepcopy([pg["lr"] for pg in runner.optimizer.param_groups])
-
         self.total_training_steps = len(runner.loaders["train"]) * runner.num_epochs
 
     def on_batch_start(self, runner: IRunner):
@@ -70,9 +75,9 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
                     f"Incorrect value computed on global_batch_step {runner.global_batch_step}, global_grad_update_step {runner.global_grad_update_step}, epoch {runner.global_epoch}"
                 )
 
-            cosine_decay = math.cos(training_fraction * math.pi / 2)
+            cosine_decay = math.cos(training_fraction * math.pi) / 2 + 0.5
             # Interpolate LR fraction between 1 and self.final_lr_fraction
-            lr_fraction = cosine_decay + (1.0 - cosine_decay) * self.final_lr_fraction
+            lr_fraction = (1 - self.final_lr_fraction) * cosine_decay + self.final_lr_fraction
 
             if lr_fraction < 0 or lr_fraction > 1.0:
                 raise RuntimeError(
@@ -84,12 +89,13 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    
-    num_steps = 1000000
+
+    num_steps = 1_000
     x = np.arange(num_steps)
-    y = cosine_scheduler_with_warmup(num_steps,initial_lr=1e-3, warmup_lr_fraction=0.01, warmup_num_steps=1000, final_lr_fraction=0.05)
-    
-    
+    y = cosine_scheduler_with_warmup(
+        num_steps, initial_lr=1e-3, warmup_lr_fraction=0.01, warmup_num_steps=200, final_lr_fraction=0.05
+    )
+
     plt.figure()
-    plt.plog(x,y)
-    plt.figure()
+    plt.plot(x, y)
+    plt.show()
