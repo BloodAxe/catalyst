@@ -378,6 +378,10 @@ class IRunner(ABC, FrozenClass):
         self._init(**kwargs)
         self._freeze()
 
+    @property
+    def total_training_steps(self) -> int:
+        return len(self.loaders["train"]) * self.num_epochs
+
     def _prepare_inner_state(
         self,
         stage: str = SETTINGS.stage_infer_prefix,

@@ -29,8 +29,6 @@ def cosine_scheduler_with_warmup(
 
 
 class CosineDecaySchedulerCallback(ISchedulerCallback):
-    total_training_steps: int
-
     def __init__(
         self,
         warmup_num_steps: int = 0,
@@ -53,7 +51,6 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
     def on_stage_start(self, runner: IRunner):
         self.original_learning_rates = copy.deepcopy([pg["lr"] for pg in runner.optimizer.param_groups])
-        self.total_training_steps = len(runner.loaders["train"]) * runner.num_epochs
 
     def on_batch_start(self, runner: IRunner):
         if not runner.is_train_loader:
@@ -67,7 +64,7 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         else:
             # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
             training_fraction = (runner.global_train_step - self.warmup_num_steps) / (
-                self.total_training_steps - self.warmup_num_steps
+                runner.total_training_steps - self.warmup_num_steps
             )
             if training_fraction < 0 or training_fraction > 1:
                 raise RuntimeError(
