@@ -34,6 +34,7 @@ class VerboseLogger(ILoggerCallback):
         self,
         always_show: List[str] = None,
         never_show: List[str] = None,
+        show_internal:bool = False
     ):
         """
         Args:
@@ -47,17 +48,23 @@ class VerboseLogger(ILoggerCallback):
         self.step = 0
         self.always_show = always_show if always_show is not None else ["_timer/_fps"]
         self.never_show = never_show if never_show is not None else []
+        self.show_internal = show_internal
 
         intersection = set(self.always_show) & set(self.never_show)
-
-        error_message = f"Intersection of always_show and " f"never_show has common values: {intersection}"
         if bool(intersection):
+            error_message = f"Intersection of always_show and never_show has common values: {intersection}"
             raise ValueError(error_message)
 
     def _need_show(self, key: str):
-        not_blacklisted: bool = key not in self.never_show
+        is_blacklisted: bool = key in self.never_show
+        if is_blacklisted:
+            return False
+
         is_whitelisted: bool = key in self.always_show
-        not_basic = not (
+        if is_whitelisted:
+            return True
+
+        is_internal = (
             key.startswith("_base")
             or key.startswith("_timer")
             or key.startswith("_grad_norm")
@@ -65,9 +72,10 @@ class VerboseLogger(ILoggerCallback):
             or key.startswith("_update_to_weight")
         )
 
-        result = not_blacklisted and (is_whitelisted or not_basic)
+        if is_internal:
+            return self.show_internal
 
-        return result
+        return True
 
     def on_loader_start(self, runner: "IRunner"):
         """Init tqdm progress bar."""
