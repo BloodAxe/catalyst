@@ -3,6 +3,7 @@ from typing import Callable, List, Optional
 import numpy as np
 import torch
 from pytorch_toolbelt.utils import is_main_process, all_gather, plot_confusion_matrix, render_figure_to_tensor
+from sklearn.metrics import confusion_matrix
 from torch import Tensor
 
 from catalyst.callbacks.visualization import get_tensorboard_logger
@@ -36,7 +37,7 @@ class ConfusionMatrixCallback(Callback):
         self.prefix = prefix
         self.class_names = class_names
         self.num_classes = num_classes if class_names is None else len(class_names)
-        self.output_key = predictions_key
+        self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
         self.confusion_matrix = None
@@ -60,8 +61,8 @@ class ConfusionMatrixCallback(Callback):
                 "Shape of predictions and targets must be equal. Got {predictions.size()} and {targets.size()}."
             )
 
-        true_labels = true_labels.view(-1)
-        pred_labels = pred_labels.view(-1)
+        true_labels = targets.view(-1)
+        pred_labels = predictions.view(-1)
 
         if self.ignore_index is not None:
             mask = true_labels != self.ignore_index
@@ -69,8 +70,8 @@ class ConfusionMatrixCallback(Callback):
             true_labels = torch.masked_select(true_labels, mask)
 
         if len(true_labels):
-            true_labels = to_numpy(true_labels)
-            pred_labels = to_numpy(pred_labels)
+            true_labels = true_labels.detach().cpu().numpy()
+            pred_labels = pred_labels.detach().cpu().numpy()
             batch_cm = confusion_matrix(
                 y_true=true_labels, y_pred=pred_labels, labels=np.arange(self.num_classes, dtype=int)
             )
