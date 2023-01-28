@@ -44,7 +44,7 @@ class ConfusionMatrixCallback(Callback):
         self.outputs_to_labels = outputs_to_labels
 
     def on_loader_start(self, state):
-        self.confusion_matrix = np.zeros((self.num_classes, self.num_classes), dtype=np.long)
+        self.confusion_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
 
     @torch.no_grad()
     def on_batch_end(self, runner: IRunner):
