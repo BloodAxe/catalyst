@@ -1,4 +1,5 @@
 import collections
+import copy
 import typing
 
 import numpy as np
@@ -6,6 +7,7 @@ import torch
 from catalyst.callbacks.optimizer import IOptimizerCallback
 from catalyst.core import IRunner, Callback, CallbackOrder
 from torch import Tensor, nn
+from pytorch_toolbelt.utils import get_non_wrapped_model
 
 __all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay", "ThresholdDecay"]
 
@@ -59,7 +61,7 @@ class ExponentialMovingAverage:
 
     def __init__(
         self,
-        parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]],
+        state_dict: collections.OrderedDict,
     ):
         """
         Args:
@@ -67,12 +69,10 @@ class ExponentialMovingAverage:
             `model.parameters()`.
           decay: The exponential decay.
         """
-        self.averaged_params = collections.OrderedDict(
-            [(k, p.clone().detach()) for k, p in parameters if p.requires_grad]
-        )
+        self.state_dict = state_dict
 
     @torch.no_grad()
-    def update(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]], ema_fraction: float):
+    def update(self, state_dict: collections.OrderedDict, ema_fraction: float):
         """
         Update currently maintained parameters.
         Call this every time the parameters are updated, such as the result of
@@ -82,25 +82,14 @@ class ExponentialMovingAverage:
         ema_fraction: Weight factor for EMA weights. Model weights get weight 1 - ema_fraction
         """
 
-        parameters = collections.OrderedDict([(k, p.detach().clone()) for k, p in parameters if p.requires_grad])
-
-        if parameters.keys() != self.averaged_params.keys():
+        if state_dict.keys() != self.state_dict.keys():
             raise RuntimeError("Keys in EMA model and current model does not match")
 
-        for key in self.averaged_params.keys():
-            self.averaged_params[key].copy_(
-                self.weighted_sum(self.averaged_params[key], parameters[key], ema_fraction)
-            )
-
-    def copy_to(self, parameters: typing.Iterator[typing.Tuple[str, nn.Parameter]]):
-        """
-        Copies current EMA parameters into given collection of parameters.
-        Args:
-          parameters: Iterable of `torch.nn.Parameter`; the parameters to be
-            updated with the stored moving averages.
-        """
-        for key, recipient_param in parameters:
-            recipient_param.data.copy_(self.averaged_params[key])
+        for key in self.state_dict.keys():
+            old_value = self.state_dict[key]
+            new_value = state_dict[key]
+            smoothhed_value = self.weighted_sum(old_value, new_value, ema_fraction)
+            old_value.copy_(smoothhed_value)
 
     @classmethod
     def weighted_sum(cls, averaged_weights: Tensor, current_weights: Tensor, p: float) -> Tensor:
@@ -143,9 +132,9 @@ class EMACallback(Callback):
                 "Length of train loader contains non-integer number of gradient updates. "
                 "Last batch would not contribute to grad update."
             )
-        self.ema = ExponentialMovingAverage(
-            parameters=runner.model.named_parameters(),
-        )
+
+        model = get_non_wrapped_model(runner.model)
+        self.ema = ExponentialMovingAverage(copy.deepcopy(model.state_dict()))
         self.non_ema_state_dict = None
 
     def _on_train_loader_start(self, runner: "IRunner"):
@@ -153,8 +142,9 @@ class EMACallback(Callback):
         On the start of train epoch we restore the saved (non-EMA) model state dict.
         A non_ema_state_dict is None on the first epoch.
         """
+        model = get_non_wrapped_model(runner.model)
         if self.non_ema_state_dict is not None:
-            runner.model.load_state_dict(self.non_ema_state_dict)
+            model.load_state_dict(self.non_ema_state_dict)
 
     def on_grad_step_end(self, runner: IRunner):
         if not runner.is_train_loader:
@@ -166,18 +156,20 @@ class EMACallback(Callback):
             step=runner.global_grad_update_step,
             total_steps=self.total_grad_update_steps,
         )
+        model = get_non_wrapped_model(runner.model)
 
         runner.batch_metrics["_ema/decay"] = decay
-        self.ema.update(runner.model.named_parameters(), decay)
+        self.ema.update(model.state_dict(), decay)
 
     def _on_train_loader_end(self, runner: "IRunner"):
         """
         Save the non-EMA model state to internal state as it will be flipped to EMA version on validation.
         """
-        non_ema_state_dict = collections.OrderedDict(
-            [(k, p.detach().clone()) for k, p in runner.model.state_dict().items() if p.requires_grad]
-        )
-        self.non_ema_state_dict = non_ema_state_dict
+        model = get_non_wrapped_model(runner.model)
+        new_state_dict = model.state_dict()
+        self.non_ema_state_dict = copy.deepcopy(new_state_dict)
+        pass
+
 
     def _on_valid_loader_start(self, runner: "IRunner"):
         """
@@ -185,7 +177,8 @@ class EMACallback(Callback):
         :param runner:
         :return:
         """
-        self.ema.copy_to(runner.model.named_parameters())
+        model = get_non_wrapped_model(runner.model)
+        model.load_state_dict(self.ema.state_dict)
 
     def _on_valid_loader_end(self, runner: "IRunner"):
         """
@@ -200,7 +193,9 @@ class EMACallback(Callback):
         pass
 
     def on_stage_end(self, runner: "IRunner"):
-        self.ema.copy_to(runner.model.named_parameters())
+        model = get_non_wrapped_model(runner.model)
+        model.load_state_dict(self.ema.state_dict)
+
         self.ema = None
         self.non_ema_state_dict = None
 
