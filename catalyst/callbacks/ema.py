@@ -145,6 +145,7 @@ class EMACallback(Callback):
         model = get_non_wrapped_model(runner.model)
         if self.non_ema_state_dict is not None:
             model.load_state_dict(self.non_ema_state_dict)
+            self.non_ema_state_dict = None
 
     def on_grad_step_end(self, runner: IRunner):
         if not runner.is_train_loader:
@@ -169,7 +170,6 @@ class EMACallback(Callback):
         new_state_dict = model.state_dict()
         self.non_ema_state_dict = copy.deepcopy(new_state_dict)
         pass
-
 
     def _on_valid_loader_start(self, runner: "IRunner"):
         """
