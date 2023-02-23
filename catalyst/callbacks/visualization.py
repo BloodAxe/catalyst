@@ -113,17 +113,17 @@ class ShowPolarBatchesCallback(Callback):
             warnings.warn(f"Metric value for {self.target_metric} is not available in runner.metrics.batch_values")
             return
 
-        if self.track_best and self.best_score is None or self.is_better(value, self.best_score):
+        if self.track_best and (self.best_score is None or self.is_better(value, self.best_score)):
             self.best_score = value
             self.best_input = self.to_cpu(runner.input)
             self.best_output = self.to_cpu(runner.output)
 
-        if self.track_worst and self.worst_score is None or self.is_worse(value, self.worst_score):
+        if self.track_worst and (self.worst_score is None or self.is_worse(value, self.worst_score)):
             self.worst_score = value
             self.worst_input = self.to_cpu(runner.input)
             self.worst_output = self.to_cpu(runner.output)
 
-        if self.track_nan and self.nan_input is None and self.is_nan(value):
+        if self.track_nan and (self.nan_input is None and self.is_nan(value)):
             self.nan_input = self.to_cpu(runner.input)
             self.nan_output = self.to_cpu(runner.output)
 
