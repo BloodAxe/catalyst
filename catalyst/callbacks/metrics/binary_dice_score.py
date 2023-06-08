@@ -92,7 +92,7 @@ class BinaryDiceScore(Callback):
             tn = (~prediction & ~target).sum(dim=0).float()  # [NumThresholds]
 
             if scene_id not in self.per_scene_meters:
-                self.per_scene_meters[scene_id] = SegmentationMeter(self.num_thresholds)
+                self.per_scene_meters[scene_id] = SegmentationMeter.empty(self.num_thresholds)
 
             meter = self.per_scene_meters[scene_id]
             meter.tp += to_numpy(tp)
