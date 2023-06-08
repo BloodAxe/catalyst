@@ -16,6 +16,13 @@ from catalyst.utils import get_tensorboard_logger
 class BinaryDiceScore(Callback):
     """
     Metric callback to compute binary dice score per scene.
+    This callback supports following features:
+    - Computation of F-beta dice score metric (Default: beta = 1.0 )
+    - Threshold tuning by passing a list of thresholds (Default: 0.5)
+    - Logging of the plot of dice score (Y axis) vs threshold value (X axis)
+    - Ignoring specific targets during metric computation
+    - Computation of metric per scene and averaging over all scenes
+    - Custom activation function for outputs (Default: sigmoid)
     """
 
     def __init__(
