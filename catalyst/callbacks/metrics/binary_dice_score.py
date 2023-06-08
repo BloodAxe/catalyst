@@ -76,7 +76,7 @@ class BinaryDiceScore(Callback):
 
         for scene_id, prediction, target in zip(scenes, predictions, targets):
             if self.ignore_index is not None:
-                mask = targets != self.ignore_index
+                mask = target != self.ignore_index
                 prediction = prediction[mask]
                 target = target[mask]
 
