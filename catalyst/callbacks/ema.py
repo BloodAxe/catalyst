@@ -97,7 +97,10 @@ class ExponentialMovingAverage:
             raise RuntimeError("Keys in EMA model and current model does not match")
 
         for key in self.state_dict.keys():
-            self.state_dict[key].mul_(ema_fraction).add_(state_dict[key], alpha=1 - ema_fraction)
+            if self.state_dict[key].is_floating_point():
+                self.state_dict[key].mul_(ema_fraction).add_(state_dict[key], alpha=1 - ema_fraction)
+            else:
+                self.state_dict[key].copy_(state_dict[key])
 
 
 class EMACallback(Callback):
