@@ -9,12 +9,23 @@ from catalyst.core import IRunner, Callback, CallbackOrder
 from torch import Tensor, nn
 from pytorch_toolbelt.utils import get_non_wrapped_model
 
-__all__ = ["ExponentialMovingAverage", "EMACallback", "ExpEMADecay", "BetaDecay", "ThresholdDecay"]
+__all__ = ["ExponentialMovingAverage", "EMACallback", "ConstantDecay", "ExpEMADecay", "BetaDecay", "ThresholdDecay"]
 
 
 class EMADecay:
     def __call__(self, step: int, total_steps: int):
         raise NotImplementedError
+
+
+class ConstantDecay(EMADecay):
+    def __init__(self, decay: float):
+        self.decay = decay
+
+    def __call__(self, step: int, total_steps: int):
+        return self.decay
+
+    def __repr__(self):
+        return f"ConstantDecay(decay={self.decay})"
 
 
 class ThresholdDecay(EMADecay):
