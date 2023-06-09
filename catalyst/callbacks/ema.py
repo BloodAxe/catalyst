@@ -97,18 +97,7 @@ class ExponentialMovingAverage:
             raise RuntimeError("Keys in EMA model and current model does not match")
 
         for key in self.state_dict.keys():
-            old_value = self.state_dict[key]
-            new_value = state_dict[key]
-            smoothhed_value = self.weighted_sum(old_value, new_value, ema_fraction)
-            old_value.copy_(smoothhed_value)
-
-    @classmethod
-    def weighted_sum(cls, averaged_weights: Tensor, current_weights: Tensor, p: float) -> Tensor:
-        """
-        Perform weighted sum of averaged weights and current weights using formula:
-        >>> new_weights = p * averaged_weights + (1 - p) * current_weights
-        """
-        return p * averaged_weights + (1.0 - p) * current_weights
+            self.state_dict[key].mul_(ema_fraction).add_(state_dict[key], alpha=1 - ema_fraction)
 
 
 class EMACallback(Callback):
