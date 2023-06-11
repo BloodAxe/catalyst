@@ -127,7 +127,7 @@ class BinaryDiceScore(Callback):
                 f = plt.figure(figsize=(10, 10))
                 plt.plot(self.thresholds, mean_dice_fbeta)
                 plt.xlabel("Threshold")
-                plt.ylabel(f"Global Dice F{self.beta:.2f}")
+                plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
                 plt.grid()
                 plt.title(f"Best threshold: {best_dice_threshold:.3f} | Dice: {best_dice_value:.3f}")
                 plt.tight_layout()
