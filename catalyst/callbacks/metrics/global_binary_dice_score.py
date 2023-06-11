@@ -1,3 +1,5 @@
+import functools
+import itertools
 from typing import Union, List, Callable, Optional
 
 import matplotlib.pyplot as plt
@@ -12,7 +14,6 @@ from catalyst.callbacks.metrics.segmentation_utils import SegmentationMeter
 from catalyst.core import Callback, CallbackOrder, IRunner
 from catalyst.utils import get_tensorboard_logger
 
-        
 
 class GlobalBinaryDiceScore(Callback):
     """
@@ -27,7 +28,7 @@ class GlobalBinaryDiceScore(Callback):
         activation: Union[None, str, Callable[[Tensor], Tensor], nn.Module] = torch.sigmoid,
         threshold: Union[float, List[float], np.ndarray] = 0.5,
         metric_name: str = "metrics/global_dice",
-        metric_threshold_name = "metrics/global_dice_threshold",
+        metric_threshold_name="metrics/global_dice_threshold",
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
     ):
@@ -93,8 +94,8 @@ class GlobalBinaryDiceScore(Callback):
         self.meter.tn += to_numpy(tn)
 
     def on_loader_end(self, runner: "IRunner"):
-        meter:SegmentationMeter = sum(all_gather(self.meter))
-        
+        meter: SegmentationMeter = functools.reduce(lambda x, y: x + y, all_gather(self.meter))
+
         dice_fbeta = meter.fbeta(self.beta)
 
         best_dice_index = np.argmax(dice_fbeta)
