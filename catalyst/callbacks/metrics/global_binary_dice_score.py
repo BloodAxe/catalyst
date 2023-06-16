@@ -1,5 +1,4 @@
 import functools
-import itertools
 from typing import Union, List, Callable, Optional
 
 import matplotlib.pyplot as plt
@@ -123,6 +122,7 @@ class GlobalBinaryDiceScore(Callback):
                     figure=f,
                     global_step=runner.global_epoch,
                 )
+                plt.close(f)
 
                 summary_writer.add_pr_curve_raw(
                     tag=self.metric_name + "/pr_curve",
