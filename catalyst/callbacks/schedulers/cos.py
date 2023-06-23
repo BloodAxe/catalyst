@@ -68,6 +68,8 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         main_desc = f"Cosine decay to {self.final_lr_fraction}x of initial LR."
         if self.warmup_num_steps:
             main_desc += f" Warmup from {self.warmup_lr_fraction}x LR for {self.warmup_num_steps} steps."
+        if self.cooldown_epochs:
+            main_desc += f" Cooldown for {self.cooldown_epochs} epochs."
         return main_desc
 
     def on_stage_start(self, runner: IRunner):
