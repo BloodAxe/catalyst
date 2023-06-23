@@ -11,7 +11,12 @@ __all__ = ["CosineDecaySchedulerCallback"]
 
 
 def cosine_scheduler_with_warmup(
-    steps: int, initial_lr: float, final_lr_fraction: float, warmup_lr_fraction: float, warmup_num_steps: int
+    steps: int,
+    initial_lr: float,
+    final_lr_fraction: float,
+    warmup_lr_fraction: float,
+    warmup_num_steps: int,
+    cooldown_num_steps: int,
 ):
     """
     Cosine decay scheduler with warmup
@@ -19,22 +24,37 @@ def cosine_scheduler_with_warmup(
     warmup_lr = initial_lr * warmup_lr_fraction
     final_lr = initial_lr * final_lr_fraction
     warmup_lrs = np.linspace(warmup_lr, initial_lr, num=warmup_num_steps)
-    training_fraction = np.linspace(0, 1, num=steps - warmup_num_steps)
+    cooldown_lrs = np.ones(cooldown_num_steps) * final_lr
+    training_fraction = np.linspace(0, 1, num=steps - warmup_num_steps - cooldown_num_steps)
 
     cosine_lr_fraction = np.cos(training_fraction * math.pi) / 2 + 0.5
     cosine_lrs = (initial_lr - final_lr) * cosine_lr_fraction + final_lr
 
-    lr_interpolation_factors = np.concatenate([warmup_lrs, cosine_lrs])
+    lr_interpolation_factors = np.concatenate([warmup_lrs, cosine_lrs, cooldown_lrs])
     return lr_interpolation_factors
 
 
 class CosineDecaySchedulerCallback(ISchedulerCallback):
+    """
+    Cosine decay scheduler callback
+    """
+    
     def __init__(
         self,
         warmup_num_steps: int = 0,
         warmup_lr_fraction: float = 0.01,
         final_lr_fraction: float = 0.2,
+        num_cooldown_epochs: int = 0,
     ):
+        """
+        
+        :param warmup_num_steps: number of steps for linear learning rate warmup at the start of training
+                                 If > 0, learning rate is linearly increased from `warmup_lr_fraction * initial learning rate` in Optimizer
+                                 to initial learning rate in `warmup_num_steps` steps.
+        :param warmup_lr_fraction: lr fraction for warmup
+        :param final_lr_fraction: final lr fraction
+        :param num_cooldown_epochs: number of epochs for cooldown, where Lr remains of constant value `final_lr_fraction * initial learning rate`.
+        """
         super().__init__(order=CallbackOrder.scheduler, node=CallbackNode.all)
         self.final_lr_fraction = final_lr_fraction
 
@@ -42,6 +62,7 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         self.warmup_lr_fraction = warmup_lr_fraction
         self.warmup_lr_interpolation_factors = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
         self.original_learning_rates = None
+        self.cooldown_epochs = num_cooldown_epochs
 
     def __repr__(self):
         main_desc = f"Cosine decay to {self.final_lr_fraction}x of initial LR."
@@ -61,11 +82,18 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
             for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
                 pg["lr"] = original_lr * scale
+        elif runner.epoch >= runner.num_epochs - self.cooldown_epochs:
+            scale_lr_for_param_groups(
+                runner.optimizer.param_groups, self.original_learning_rates, self.final_lr_fraction
+            )
+
         else:
             # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
-            training_fraction = (runner.global_train_step - self.warmup_num_steps) / (
-                runner.total_training_steps - self.warmup_num_steps
+            cooldown_steps = self.cooldown_epochs * len(runner.loaders["train"])
+            training_fraction = (runner.global_train_step - self.warmup_num_steps - cooldown_steps) / (
+                runner.total_training_steps - self.warmup_num_steps - cooldown_steps
             )
+
             if training_fraction < 0 or training_fraction > 1:
                 raise RuntimeError(
                     f"Detected incorrect training_fraction {training_fraction} for cosine scheduler. It must stay in range [0...1]. "
@@ -90,7 +118,12 @@ if __name__ == "__main__":
     num_steps = 1_000
     x = np.arange(num_steps)
     y = cosine_scheduler_with_warmup(
-        num_steps, initial_lr=1e-3, warmup_lr_fraction=0.01, warmup_num_steps=200, final_lr_fraction=0.05
+        num_steps,
+        initial_lr=1e-3,
+        warmup_lr_fraction=0.01,
+        warmup_num_steps=200,
+        final_lr_fraction=0.05,
+        cooldown_num_steps=100,
     )
 
     plt.figure()
