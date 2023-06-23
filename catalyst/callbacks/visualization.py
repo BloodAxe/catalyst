@@ -1,3 +1,4 @@
+import os.path
 import warnings
 from typing import Callable, Optional, List, Union, Dict, Iterable
 
@@ -36,6 +37,7 @@ class ShowPolarBatchesCallback(Callback):
         track_best: bool = True,
         track_worst: bool = True,
         track_nan: bool = True,
+        filesystem_output_dir: str = None,
     ):
         """
 
@@ -69,6 +71,7 @@ class ShowPolarBatchesCallback(Callback):
         self.is_better = None
         self.visualize_batch = visualize_batch
         self.targets = [targets] if isinstance(targets, str) else targets
+        self.filesystem_output_dir = filesystem_output_dir
 
         if minimize:
             self.is_better = lambda score, best: score <= (best - min_delta)
@@ -132,17 +135,18 @@ class ShowPolarBatchesCallback(Callback):
 
         if self.best_score is not None:
             best_samples = self.visualize_batch(self.best_input, self.best_output)
-            self._log_samples(best_samples, "best", logger, runner.global_batch_step)
+            self._log_samples(best_samples, "best", logger, runner)
 
         if self.worst_score is not None:
             worst_samples = self.visualize_batch(self.worst_input, self.worst_output)
-            self._log_samples(worst_samples, "worst", logger, runner.global_batch_step)
+            self._log_samples(worst_samples, "worst", logger, runner)
 
         if self.nan_input is not None:
             nan_samples = self.visualize_batch(self.nan_input, self.nan_output)
-            self._log_samples(nan_samples, "nan", logger, runner.global_batch_step)
+            self._log_samples(nan_samples, "nan", logger, runner)
 
-    def _log_samples(self, samples, name, logger, step):
+    def _log_samples(self, samples, name, logger, runner: IRunner):
+        step = runner.global_epoch
         if "tensorboard" in self.targets:
             for i, image in enumerate(samples):
                 logger.add_image(f"{self.target_metric}/{name}/{i}", image_to_tensor(image), step)
@@ -154,6 +158,13 @@ class ShowPolarBatchesCallback(Callback):
                 plt.tight_layout()
                 plt.axis("off")
                 plt.show()
+
+        if "filesystem" in self.targets:
+            output_dir = os.path.join(self.filesystem_output_dir, f"epoch_{runner.epoch}_{name}")
+            os.makedirs(output_dir, exist_ok=True)
+            for i, image in enumerate(samples):
+                filename = f"rank_{runner.distributed_rank}_{runner.loader_name}_{self.target_metric}_{i:03d}.png"
+                cv2.imwrite(os.path.join(output_dir, filename), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
 
 
 class ShowEmbeddingsCallback(Callback):

@@ -16,6 +16,13 @@ from catalyst.utils import get_tensorboard_logger
 class BinaryDiceScore(Callback):
     """
     Metric callback to compute binary dice score per scene.
+    This callback supports following features:
+    - Computation of F-beta dice score metric (Default: beta = 1.0 )
+    - Threshold tuning by passing a list of thresholds (Default: 0.5)
+    - Logging of the plot of dice score (Y axis) vs threshold value (X axis)
+    - Ignoring specific targets during metric computation
+    - Computation of metric per scene and averaging over all scenes
+    - Custom activation function for outputs (Default: sigmoid)
     """
 
     def __init__(
@@ -76,7 +83,7 @@ class BinaryDiceScore(Callback):
 
         for scene_id, prediction, target in zip(scenes, predictions, targets):
             if self.ignore_index is not None:
-                mask = targets != self.ignore_index
+                mask = target != self.ignore_index
                 prediction = prediction[mask]
                 target = target[mask]
 
@@ -92,7 +99,7 @@ class BinaryDiceScore(Callback):
             tn = (~prediction & ~target).sum(dim=0).float()  # [NumThresholds]
 
             if scene_id not in self.per_scene_meters:
-                self.per_scene_meters[scene_id] = SegmentationMeter(self.num_thresholds)
+                self.per_scene_meters[scene_id] = SegmentationMeter.empty(self.num_thresholds)
 
             meter = self.per_scene_meters[scene_id]
             meter.tp += to_numpy(tp)
@@ -120,7 +127,7 @@ class BinaryDiceScore(Callback):
                 f = plt.figure(figsize=(10, 10))
                 plt.plot(self.thresholds, mean_dice_fbeta)
                 plt.xlabel("Threshold")
-                plt.ylabel(f"Global Dice F{self.beta:.2f}")
+                plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
                 plt.grid()
                 plt.title(f"Best threshold: {best_dice_threshold:.3f} | Dice: {best_dice_value:.3f}")
                 plt.tight_layout()
