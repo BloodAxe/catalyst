@@ -108,9 +108,11 @@ def test_cosinedecayschedulercallback():
     num_epochs = 50
 
     scheduler = CosineDecaySchedulerCallback(
-        warmup_num_steps=(num_epochs * len(loaders["train"]) // batch_size) // 2,
+        warmup_num_steps=(len(loaders["train"]) // 2),
         warmup_lr_fraction=0.01,
         final_lr_fraction=0.5,
+        num_flat_epochs=10,
+        num_cooldown_epochs=15,
     )
 
     runner.train(
@@ -124,7 +126,7 @@ def test_cosinedecayschedulercallback():
             TensorboardLogger(),
             OptimizerLoggerCallback(),
         ],
-        num_epochs=50,
+        num_epochs=num_epochs,
         logdir="./test_cosinedecayschedulercallback",
         verbose=True,
     )

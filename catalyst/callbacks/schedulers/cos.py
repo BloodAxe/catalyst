@@ -85,8 +85,9 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
         if runner.global_grad_update_step < self.warmup_num_steps:
             scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
-            for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
-                pg["lr"] = original_lr * scale
+            scale_lr_for_param_groups(
+                runner.optimizer.param_groups, initial_learning_rates=self.original_learning_rates, scale=scale
+            )
         elif runner.epoch < self.num_flat_epochs:
             scale_lr_for_param_groups(
                 runner.optimizer.param_groups, initial_learning_rates=self.original_learning_rates, scale=1.0
@@ -100,9 +101,10 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         else:
 
             # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
-            total_warmup_steps = self.warmup_num_steps * len(runner.loaders["train"])
-            total_flat_steps = self.num_flat_epochs * len(runner.loaders["train"])
-            total_cooldown_steps = self.num_cooldown_epochs * len(runner.loaders["train"])
+            train_loader_len = len(runner.loaders["train"])
+            total_warmup_steps = self.warmup_num_steps
+            total_flat_steps = self.num_flat_epochs * train_loader_len
+            total_cooldown_steps = self.num_cooldown_epochs * train_loader_len
 
             current_step_with_cosine_annealing = max(
                 0, runner.global_train_step - max(total_warmup_steps, total_flat_steps)
