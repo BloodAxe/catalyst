@@ -38,16 +38,17 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
     """
     Cosine decay scheduler callback
     """
-    
+
     def __init__(
         self,
         warmup_num_steps: int = 0,
         warmup_lr_fraction: float = 0.01,
         final_lr_fraction: float = 0.2,
+        num_flat_epochs: int = 0,
         num_cooldown_epochs: int = 0,
     ):
         """
-        
+
         :param warmup_num_steps: number of steps for linear learning rate warmup at the start of training
                                  If > 0, learning rate is linearly increased from `warmup_lr_fraction * initial learning rate` in Optimizer
                                  to initial learning rate in `warmup_num_steps` steps.
@@ -62,14 +63,17 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         self.warmup_lr_fraction = warmup_lr_fraction
         self.warmup_lr_interpolation_factors = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
         self.original_learning_rates = None
-        self.cooldown_epochs = num_cooldown_epochs
+        self.num_flat_epochs = num_flat_epochs
+        self.num_cooldown_epochs = num_cooldown_epochs
 
     def __repr__(self):
         main_desc = f"Cosine decay to {self.final_lr_fraction}x of initial LR."
         if self.warmup_num_steps:
             main_desc += f" Warmup from {self.warmup_lr_fraction}x LR for {self.warmup_num_steps} steps."
-        if self.cooldown_epochs:
-            main_desc += f" Cooldown for {self.cooldown_epochs} epochs."
+        if self.num_flat_epochs:
+            main_desc += f" Flat for {self.num_flat_epochs} epochs."
+        if self.num_cooldown_epochs:
+            main_desc += f" Cooldown for {self.num_cooldown_epochs} epochs."
         return main_desc
 
     def on_stage_start(self, runner: IRunner):
@@ -81,20 +85,33 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
 
         if runner.global_grad_update_step < self.warmup_num_steps:
             scale = self.warmup_lr_interpolation_factors[runner.global_grad_update_step]
-
             for original_lr, pg in zip(self.original_learning_rates, runner.optimizer.param_groups):
                 pg["lr"] = original_lr * scale
-        elif runner.epoch >= runner.num_epochs - self.cooldown_epochs:
+        elif runner.epoch < self.num_flat_epochs:
             scale_lr_for_param_groups(
-                runner.optimizer.param_groups, self.original_learning_rates, self.final_lr_fraction
+                runner.optimizer.param_groups, initial_learning_rates=self.original_learning_rates, scale=1.0
+            )
+        elif runner.epoch >= runner.num_epochs - self.num_cooldown_epochs:
+            scale_lr_for_param_groups(
+                runner.optimizer.param_groups,
+                initial_learning_rates=self.original_learning_rates,
+                scale=self.final_lr_fraction,
+            )
+        else:
+
+            # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
+            total_warmup_steps = self.warmup_num_steps * len(runner.loaders["train"])
+            total_flat_steps = self.num_flat_epochs * len(runner.loaders["train"])
+            total_cooldown_steps = self.num_cooldown_epochs * len(runner.loaders["train"])
+
+            current_step_with_cosine_annealing = max(
+                0, runner.global_train_step - max(total_warmup_steps, total_flat_steps)
+            )
+            total_steps_with_cosine_annealing = (
+                runner.total_training_steps - max(total_warmup_steps, total_flat_steps) - total_cooldown_steps
             )
 
-        else:
-            # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
-            cooldown_steps = self.cooldown_epochs * len(runner.loaders["train"])
-            training_fraction = max(0, runner.global_train_step - self.warmup_num_steps - cooldown_steps) / (
-                runner.total_training_steps - self.warmup_num_steps - cooldown_steps
-            )
+            training_fraction = current_step_with_cosine_annealing / float(total_steps_with_cosine_annealing)
 
             if training_fraction < 0 or training_fraction > 1:
                 raise RuntimeError(
