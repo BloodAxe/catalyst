@@ -92,7 +92,7 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         else:
             # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
             cooldown_steps = self.cooldown_epochs * len(runner.loaders["train"])
-            training_fraction = (runner.global_train_step - self.warmup_num_steps - cooldown_steps) / (
+            training_fraction = max(0, runner.global_train_step - self.warmup_num_steps - cooldown_steps) / (
                 runner.total_training_steps - self.warmup_num_steps - cooldown_steps
             )
 
