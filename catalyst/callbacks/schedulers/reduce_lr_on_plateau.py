@@ -20,6 +20,7 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
         min_delta: float,
         warmup_num_steps: int = 0,
         warmup_lr_fraction: float = 0.01,
+        min_learning_rate_fraction: float = 1e-7,
     ):
         super().__init__(order=CallbackOrder.Scheduler)
         self.patience = patience
@@ -33,6 +34,8 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
         self.warmup_lr_fraction = warmup_lr_fraction
         self.warmup_lr_interpolation_factors = np.linspace(warmup_lr_fraction, 1.0, num=warmup_num_steps)
         self.original_learning_rates = None
+        self.min_learning_rate_fraction = min_learning_rate_fraction
+        self.current_learning_rate_fraction = 1.0
 
         if minimize:
             self.is_better = lambda score, best: score <= (best - min_delta)
@@ -60,13 +63,16 @@ class ReduceLROnPlateauCallback(ISchedulerCallback):
     def on_epoch_start(self, runner: IRunner):
         if self.epochs_without_improvement >= self.patience:
             self.epochs_without_improvement = 0
-            for pg in runner.optimizer.param_groups:
-                pg["lr"] *= self.multiplier
+            self.current_learning_rate_fraction = max(
+                self.min_learning_rate_fraction, self.current_learning_rate_fraction * self.multiplier
+            )
+            scale_lr_for_param_groups(
+                runner.optimizer.param_groups, self.original_learning_rates, self.current_learning_rate_fraction
+            )
 
     def on_epoch_end(self, runner: IRunner):
         value = runner.valid_metrics[self.metric_to_monitor]
-        best_value = self.best_value
-        if self.best_value is None or self.is_better(value, best_value):
+        if self.best_value is None or self.is_better(value, self.best_value):
             self.epochs_without_improvement = 0
             self.best_value = value
         else:
