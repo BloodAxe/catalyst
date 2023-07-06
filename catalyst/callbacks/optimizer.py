@@ -197,6 +197,7 @@ class OptimizerCallback(IOptimizerCallback):
 
     def on_loader_start(self, runner: "IRunner"):
         self._accumulation_counter = 0
+        self._optimizer.zero_grad(set_to_none=True)
 
     def on_batch_end(self, runner: "IRunner") -> None:
         """On batch end event
