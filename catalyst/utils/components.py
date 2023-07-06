@@ -54,7 +54,7 @@ def process_components(
         device = torch.device(device)
 
     if check_ddp_wrapped(model):
-        pass
+        logger.info(f"Model is already wrapped with DDP. Skipping step")
     elif check_torch_distributed_initialized():
         if not isinstance(model, nn.Module):
             raise ValueError("Distributed training is not available for KV model")
