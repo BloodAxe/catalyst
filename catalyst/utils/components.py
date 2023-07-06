@@ -67,7 +67,7 @@ def process_components(
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         find_unused = distributed_params.get("find_unused_parameters", False)
-        local_rank = get_rank()
+        local_rank = distributed_params.get("rank", get_rank())
 
         model = nn.parallel.DistributedDataParallel(
             model,
