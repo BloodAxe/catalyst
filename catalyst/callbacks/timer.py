@@ -57,6 +57,6 @@ class TimerCallback(Callback):
         for key, value in self.timer.elapsed.items():
             runner.batch_metrics[key] = value
 
-        self.timer.reset()
+        # self.timer.reset()
         self.timer.start("_timer/batch_time")
         self.timer.start("_timer/data_time")
