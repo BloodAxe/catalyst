@@ -29,8 +29,7 @@ class TimerCallback(Callback):
         Args:
             runner: current runner
         """
-        self.timer.stop("_timer/loader_start_time")
-        runner.loader_metrics["_timer/loader_time"] = self.timer.elapsed["_timer/loader_start_time"]
+        runner.loader_metrics["_timer/loader_time"] = self.timer.stop("_timer/loader_start_time")
         self.timer.reset()
 
     def on_batch_start(self, runner: "IRunner") -> None:
