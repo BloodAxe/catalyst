@@ -25,7 +25,7 @@ class RocAucMetricCallback(Callback):
         outputs_to_probas: Optional[Callable[[Tensor], Tensor]] = torch.sigmoid,
         targets_key: str = "targets",
         predictions_key: str = "logits",
-        prefix: str = "roc_auc",
+        prefix: str = "metrics/roc_auc",
         average: str = "macro",
         ignore_index: Optional[int] = None,
         log_pr_curve: bool = True,
