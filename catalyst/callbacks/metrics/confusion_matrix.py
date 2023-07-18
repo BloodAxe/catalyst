@@ -37,6 +37,8 @@ class ConfusionMatrixCallback(Callback):
         self.prefix = prefix
         self.class_names = class_names
         self.num_classes = num_classes if class_names is None else len(class_names)
+        if self.num_classes is None:
+            raise ValueError("You must specify either class_names or num_classes")
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index

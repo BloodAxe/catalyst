@@ -1,3 +1,13 @@
+from typing import Optional, Callable
+
+import numpy as np
+import torch
+from torch import Tensor
+from pytorch_toolbelt.utils import all_gather, to_numpy, is_main_process
+from catalyst.core import IRunner, Callback, CallbackOrder
+from catalyst.utils import get_tensorboard_logger
+
+
 class OutputDistributionCallback(Callback):
     """
     Plot histogram of predictions for each class. This callback supports binary & multi-classs predictions
@@ -6,8 +16,8 @@ class OutputDistributionCallback(Callback):
     def __init__(
         self,
         targets_key: str,
-        output_key: str,
-        output_activation: Optional[Callable],
+        predictions_key: str,
+        outputs_to_probas: Optional[Callable[[Tensor], Tensor]],
         num_classes: int,
         prefix="distribution",
         ignore_index=None,
@@ -16,7 +26,7 @@ class OutputDistributionCallback(Callback):
 
         Args:
             targets_key:
-            output_key:
+            predictions_key:
             output_activation: A function that should convert logits to class labels
             For binary predictions this could be `lambda x: int(x > 0.5)` or `lambda x: torch.argmax(x, dim=1)`
             for multi-class predictions.
@@ -26,11 +36,11 @@ class OutputDistributionCallback(Callback):
         super().__init__(CallbackOrder.Metric)
         self.prefix = prefix
         self.targets_key = targets_key
-        self.output_key = output_key
+        self.output_key = predictions_key
         self.true_labels = []
         self.pred_labels = []
         self.num_classes = num_classes
-        self.output_activation = output_activation
+        self.outputs_to_probas = outputs_to_probas
         self.ignore_index = ignore_index
 
     def on_loader_start(self, state: IRunner):
@@ -41,8 +51,8 @@ class OutputDistributionCallback(Callback):
     def on_batch_end(self, state: IRunner):
         y_trues = state.input[self.targets_key].detach()
         y_preds = state.output[self.output_key].detach().float()
-        if self.output_activation:
-            y_preds = self.output_activation(y_preds)
+        if self.outputs_to_probas is not None:
+            y_preds = self.outputs_to_probas(y_preds)
 
         y_trues = to_numpy(y_trues).reshape(-1)
         y_preds = to_numpy(y_preds).reshape(-1)
