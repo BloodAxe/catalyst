@@ -2,8 +2,9 @@ from typing import Callable, Optional
 
 import numpy as np
 import torch
+import typing
 from sklearn.metrics import roc_auc_score
-from torch import Tensor
+from torch import Tensor, nn
 
 from catalyst.core import Callback, CallbackOrder
 from catalyst.utils import get_dictkey_auto_fn
@@ -12,6 +13,7 @@ __all__ = ["RocAucMetricCallback"]
 
 from pytorch_toolbelt.utils import to_numpy
 from pytorch_toolbelt.utils.distributed import all_gather, is_main_process
+from pytorch_toolbelt.modules import instantiate_activation_block
 from catalyst.utils import get_tensorboard_logger
 
 
@@ -39,6 +41,15 @@ class RocAucMetricCallback(Callback):
                 specifies our `y_pred`
             prefix: key for the metric's name
         """
+        if outputs_to_probas is None:
+            outputs_to_probas = nn.Identity()
+        elif isinstance(outputs_to_probas, str):
+            outputs_to_probas = instantiate_activation_block(outputs_to_probas)
+        elif isinstance(outputs_to_probas, typing.Callable):
+            outputs_to_probas = outputs_to_probas
+        else:
+            raise ValueError(f"Unsupported type of outputs_to_probas={outputs_to_probas}")
+
         super().__init__(CallbackOrder.Metric)
         self.prefix = prefix
         self.predictions_key = predictions_key

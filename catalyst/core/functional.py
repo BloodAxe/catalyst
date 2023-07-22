@@ -1,4 +1,5 @@
 import collections
+import typing
 from collections import OrderedDict
 from typing import Dict, List, Union
 
@@ -49,11 +50,11 @@ def sort_callbacks_by_order(callbacks: Union[List, Dict, OrderedDict]) -> Ordere
     """
     if callbacks is None:
         output = OrderedDict()
-    elif isinstance(callbacks, (dict, OrderedDict)):
+    elif isinstance(callbacks, (typing.Mapping, OrderedDict, Dict)):
         output = [(k, v) for k, v in callbacks.items()]
         output = sorted(output, key=lambda x: x[1].order)
         output = OrderedDict(output)
-    elif isinstance(callbacks, list):
+    elif isinstance(callbacks, typing.Iterable):
         output = sorted(callbacks, key=lambda x: x.order)
         output = OrderedDict([(i, value) for i, value in enumerate(output)])
     else:

@@ -1,9 +1,11 @@
+import typing
 from typing import Optional, Callable
 
 import numpy as np
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 from pytorch_toolbelt.utils import all_gather, to_numpy, is_main_process
+from pytorch_toolbelt.modules import instantiate_activation_block
 from catalyst.core import IRunner, Callback, CallbackOrder
 from catalyst.utils import get_tensorboard_logger
 
@@ -33,6 +35,15 @@ class OutputDistributionCallback(Callback):
             num_classes: Number of classes. Must be 2 for binary.
             prefix:
         """
+        if outputs_to_probas is None:
+            outputs_to_probas = nn.Identity()
+        elif isinstance(outputs_to_probas, str):
+            outputs_to_probas = instantiate_activation_block(outputs_to_probas)
+        elif isinstance(outputs_to_probas, typing.Callable):
+            outputs_to_probas = outputs_to_probas
+        else:
+            raise ValueError(f"Unsupported type of outputs_to_probas={outputs_to_probas}")
+
         super().__init__(CallbackOrder.Metric)
         self.prefix = prefix
         self.targets_key = targets_key
