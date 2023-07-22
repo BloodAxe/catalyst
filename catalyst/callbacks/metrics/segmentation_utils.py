@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import Union, Tuple
+
 
 class SegmentationMeter:
     def __init__(self, tp: np.ndarray, fp: np.ndarray, fn: np.ndarray, tn: np.ndarray):
@@ -30,7 +32,7 @@ class SegmentationMeter:
         return (1 + beta**2) * p * r / (beta**2 * p + r + 1e-12)
 
     @classmethod
-    def empty(cls, num_thresholds: int):
+    def empty(cls, num_thresholds: Union[int, Tuple[int, ...]]):
         return cls(
             tp=np.zeros(num_thresholds, dtype=np.float32),
             fp=np.zeros(num_thresholds, dtype=np.float32),
@@ -45,7 +47,7 @@ class SegmentationMeter:
             fn=self.fn + other.fn,
             tn=self.tn + other.tn,
         )
-    
+
     def __iadd__(self, other):
         self.tp += other.tp
         self.fp += other.fp
