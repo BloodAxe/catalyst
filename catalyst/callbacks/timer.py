@@ -21,6 +21,7 @@ class TimerCallback(Callback):
         self.timer.reset()
         self.timer.start("_timer/batch_time")
         self.timer.start("_timer/data_time")
+        self.timer.start("_timer/loader_start_time")
 
     def on_loader_end(self, runner: "IRunner") -> None:
         """Loader end hook.
@@ -28,6 +29,7 @@ class TimerCallback(Callback):
         Args:
             runner: current runner
         """
+        runner.loader_metrics["_timer/loader_time"] = self.timer.stop("_timer/loader_start_time")
         self.timer.reset()
 
     def on_batch_start(self, runner: "IRunner") -> None:
@@ -48,12 +50,13 @@ class TimerCallback(Callback):
         self.timer.stop("_timer/model_time")
         self.timer.stop("_timer/batch_time")
 
-        self.timer.elapsed["_timer/batch_per_sec"] = runner.batch_size / (
+        self.timer.elapsed["_timer/sample_per_sec"] = runner.batch_size / (
             self.timer.elapsed["_timer/batch_time"] + 1e-6
         )
+
         for key, value in self.timer.elapsed.items():
             runner.batch_metrics[key] = value
 
-        self.timer.reset()
+        # self.timer.reset()
         self.timer.start("_timer/batch_time")
         self.timer.start("_timer/data_time")

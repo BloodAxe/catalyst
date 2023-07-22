@@ -12,7 +12,7 @@ __all__ = ["RocAucMetricCallback"]
 
 from pytorch_toolbelt.utils import to_numpy
 from pytorch_toolbelt.utils.distributed import all_gather, is_main_process
-from pytorch_toolbelt.utils.catalyst.visualization import get_tensorboard_logger
+from catalyst.utils import get_tensorboard_logger
 
 
 class RocAucMetricCallback(Callback):
@@ -25,7 +25,7 @@ class RocAucMetricCallback(Callback):
         outputs_to_probas: Optional[Callable[[Tensor], Tensor]] = torch.sigmoid,
         targets_key: str = "targets",
         predictions_key: str = "logits",
-        prefix: str = "roc_auc",
+        prefix: str = "metrics/roc_auc",
         average: str = "macro",
         ignore_index: Optional[int] = None,
         log_pr_curve: bool = True,
@@ -59,8 +59,8 @@ class RocAucMetricCallback(Callback):
 
     @torch.no_grad()
     def on_batch_end(self, runner):
-        pred_probas = self._get_predictions(runner, self.predictions_key).float()
-        true_labels = self._get_targets(runner.input, self.targets_key).float()
+        pred_probas = runner.output[self.predictions_key].float()
+        true_labels = runner.input[self.targets_key].float()
 
         if self.outputs_to_probas is not None:
             pred_probas = self.outputs_to_probas(pred_probas)

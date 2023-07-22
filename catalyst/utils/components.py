@@ -1,4 +1,3 @@
-import copy
 import logging
 from typing import Dict, Tuple
 
@@ -8,7 +7,6 @@ from torch import nn
 
 from catalyst.typing import Criterion, Device, Model, Optimizer
 from catalyst.utils.distributed import (
-    check_amp_available,
     check_ddp_wrapped,
     get_rank,
     check_torch_distributed_initialized,
@@ -55,14 +53,11 @@ def process_components(
     elif isinstance(device, str):
         device = torch.device(device)
 
-    is_amp_enabled = distributed_params.get("amp", False) and check_amp_available()
-    model: Model = maybe_recursive_call(model, "to", device=device)
-
     if check_ddp_wrapped(model):
-        pass
+        logger.info(f"Model is already wrapped with DDP. Skipping step")
     elif check_torch_distributed_initialized():
-        # distributed data parallel run (ddp) (with apex support)
-        assert isinstance(model, nn.Module), "Distributed training is not available for KV model"
+        if not isinstance(model, nn.Module):
+            raise ValueError("Distributed training is not available for KV model")
 
         model = maybe_recursive_call(model, "to", device=device)
         syncbn = distributed_params.get("syncbn", False)
@@ -72,15 +67,16 @@ def process_components(
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         find_unused = distributed_params.get("find_unused_parameters", False)
-        local_rank = get_rank()
-        
+        local_rank = distributed_params.get("rank", get_rank())
+
         model = nn.parallel.DistributedDataParallel(
             model,
             device_ids=[local_rank],
             output_device=local_rank,
             find_unused_parameters=find_unused,
         )
-  
+    else:
+        model: Model = maybe_recursive_call(model, "to", device=device)
 
     return model, criterion, optimizer, device
 

@@ -1,8 +1,10 @@
 from typing import Optional, Callable
 
+import numpy as np
+import torch
 from torch import Tensor
 
-from catalyst.core import Callback
+from catalyst.core import Callback, CallbackOrder, IRunner
 
 
 class F1ScoreCallback(Callback):
