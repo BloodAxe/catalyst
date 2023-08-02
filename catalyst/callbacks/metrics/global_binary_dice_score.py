@@ -97,6 +97,9 @@ class GlobalBinaryDiceScore(Callback):
 
         dice_fbeta = meter.fbeta(self.beta)
 
+        fp_vector = meter.fp
+        fn_vector = meter.fn
+
         best_dice_index = np.argmax(dice_fbeta)
         best_dice_threshold = self.thresholds[best_dice_index]
         best_dice_value = dice_fbeta[best_dice_index]
@@ -109,6 +112,7 @@ class GlobalBinaryDiceScore(Callback):
         if is_main_process() and num_thresholds > 1:
             try:
                 summary_writer: SummaryWriter = get_tensorboard_logger(runner)
+
                 f = plt.figure(figsize=(10, 10))
                 plt.plot(self.thresholds, dice_fbeta)
                 plt.xlabel("Threshold")
@@ -135,6 +139,31 @@ class GlobalBinaryDiceScore(Callback):
                     num_thresholds=num_thresholds,
                     global_step=runner.global_epoch,
                 )
+
+                fig, ax1 = plt.subplots(figsize=(10, 10))
+
+                color = 'tab:red'
+                ax1.set_xlabel('Threshold')
+                ax1.set_ylabel('False positives', color=color)
+                ax1.plot(self.thresholds, fp_vector, color=color)
+                ax1.tick_params(axis='y', labelcolor=color)
+
+                ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+                color = 'tab:blue'
+                ax2.set_ylabel('False negatives', color=color)  # we already handled the x-label with ax1
+                ax2.plot(self.thresholds, fn_vector, color=color)
+                ax2.tick_params(axis='y', labelcolor=color)
+
+                fig.tight_layout()  # otherwise the right y-label is slightly clipped
+                summary_writer.add_figure(
+                    tag=self.metric_name + "/false_positives_and_negatives",
+                    figure=fig,
+                    global_step=runner.global_epoch,
+                    close=True,
+                )
+
+                plt.show()
 
             except RuntimeError:
                 pass

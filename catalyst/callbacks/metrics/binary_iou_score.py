@@ -13,12 +13,14 @@ from catalyst.callbacks.metrics.segmentation_utils import SegmentationMeter
 from catalyst.core import Callback, CallbackOrder, IRunner
 from catalyst.utils import get_tensorboard_logger
 
-logger = logging.getLogger("catalyst.callbacks.metrics.BinaryDiceScore")
+logger = logging.getLogger("catalyst.callbacks.metrics.BinaryIoUScore")
+
+__all__ = ["BinaryIoUScore"]
 
 
-class BinaryDiceScore(Callback):
+class BinaryIoUScore(Callback):
     """
-    Metric callback to compute binary dice score per scene.
+    Metric callback to compute binary IoU score per scene.
     This callback supports following features:
     - Computation of F-beta dice score metric (Default: beta = 1.0 )
     - Threshold tuning by passing a list of thresholds (Default: 0.5)
@@ -35,8 +37,8 @@ class BinaryDiceScore(Callback):
         scene_key: Union[str, int, None] = None,
         activation: Union[None, str, Callable[[Tensor], Tensor], nn.Module] = torch.sigmoid,
         threshold: Union[float, List[float], np.ndarray] = 0.5,
-        metric_name: str = "metrics/mean_dice",
-        metric_threshold_name="metrics/mean_dice_threshold",
+        metric_name: str = "metrics/mean_iou",
+        metric_threshold_name="metrics/mean_iou_threshold",
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
     ):
@@ -112,29 +114,29 @@ class BinaryDiceScore(Callback):
 
     def on_loader_end(self, runner: "IRunner"):
         all_scenes: Mapping[str, SegmentationMeter] = reduce_dict_sum(self.per_scene_meters)
-        dice_fbeta = np.stack(
-            [meter.fbeta(self.beta) for meter in all_scenes.values()], axis=0
+        scores = np.stack(
+            [meter.jaccard_score() for meter in all_scenes.values()], axis=0
         )  # [NumScenes, NumThresholds]
-        mean_dice_fbeta = np.mean(dice_fbeta, axis=0)  # [NumThresholds]
+        mean_jaccard = np.mean(scores, axis=0)  # [NumThresholds]
 
-        best_dice_index = np.argmax(mean_dice_fbeta)
-        best_dice_threshold = self.thresholds[best_dice_index]
-        best_dice_value = mean_dice_fbeta[best_dice_index]
+        best_jaccard_index = np.argmax(mean_jaccard)
+        best_jaccard_threshold = self.thresholds[best_jaccard_index]
+        best_jaccard_value = mean_jaccard[best_jaccard_index]
 
-        runner.loader_metrics[self.metric_name] = float(best_dice_value)
+        runner.loader_metrics[self.metric_name] = float(best_jaccard_value)
         num_thresholds = len(self.thresholds)
 
-        runner.loader_metrics[self.metric_threshold_name] = float(best_dice_threshold)
+        runner.loader_metrics[self.metric_threshold_name] = float(best_jaccard_threshold)
 
         if is_main_process() and num_thresholds > 1:
             try:
                 summary_writer: SummaryWriter = get_tensorboard_logger(runner)
                 f = plt.figure(figsize=(10, 10))
-                plt.plot(self.thresholds, mean_dice_fbeta)
+                plt.plot(self.thresholds, mean_jaccard)
                 plt.xlabel("Threshold")
-                plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
+                plt.ylabel(f"Jaccard Score{self.beta:.2f} (Averaged per scene)")
                 plt.grid()
-                plt.title(f"Best threshold: {best_dice_threshold:.3f} | Dice: {best_dice_value:.3f}")
+                plt.title(f"Best threshold: {best_jaccard_threshold:.3f} | Jaccard: {best_jaccard_value:.3f}")
                 plt.tight_layout()
 
                 summary_writer.add_figure(

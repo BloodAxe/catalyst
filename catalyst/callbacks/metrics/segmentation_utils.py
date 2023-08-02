@@ -31,6 +31,8 @@ class SegmentationMeter:
         r = self.recall
         return (1 + beta**2) * p * r / (beta**2 * p + r + 1e-12)
 
+    def jaccard_score(self):
+        return self.tp / (self.tp + self.fp + self.fn + 1e-12)
     @classmethod
     def empty(cls, num_thresholds: Union[int, Tuple[int, ...]]):
         return cls(
