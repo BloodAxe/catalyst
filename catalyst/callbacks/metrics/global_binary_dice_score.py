@@ -30,6 +30,7 @@ class GlobalBinaryDiceScore(Callback):
         metric_threshold_name="metrics/global_dice_threshold",
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
+        targets_threshold: float = 0.5,
     ):
         """
         :param predictions_key: name of the key in ``runner.output`` dictionary with predictions
@@ -42,6 +43,7 @@ class GlobalBinaryDiceScore(Callback):
         :param metric_name: name of the metric to display in the logs
         :param beta: beta parameter for F-measure computation
         :param ignore_index: If not None, targets with given index are ignored during metric computation
+        :param targets_threshold: A threshold for targets binarization. Default: 0.5
 
 
         """
@@ -52,6 +54,7 @@ class GlobalBinaryDiceScore(Callback):
         self.targets_key = targets_key
         self.thresholds = np.asarray(threshold, dtype=np.float32).reshape(-1)
         self.activation = instantiate_activation_block(activation) if isinstance(activation, str) else activation
+        self.targets_threshold = targets_threshold
 
         num_thresholds = len(self.thresholds)
         self.meter = SegmentationMeter.empty(num_thresholds)
@@ -80,7 +83,7 @@ class GlobalBinaryDiceScore(Callback):
 
         thresholds = torch.from_numpy(self.thresholds).to(predictions.device).reshape(1, -1)
         predictions = predictions.view(-1, 1) >= thresholds
-        targets = targets.view(-1, 1) > 0
+        targets = targets.view(-1, 1) > self.targets_threshold
 
         tp = (predictions & targets).sum(dim=0).float()  # [NumThresholds]
         fp = (predictions & ~targets).sum(dim=0).float()  # [NumThresholds]
@@ -97,8 +100,8 @@ class GlobalBinaryDiceScore(Callback):
 
         dice_fbeta = meter.fbeta(self.beta)
 
-        fp_vector = meter.fp
-        fn_vector = meter.fn
+        fpr = meter.fp / (meter.fp + meter.tn + 1e-6)
+        fnr = meter.fn / (meter.fn + meter.tp + 1e-6)
 
         best_dice_index = np.argmax(dice_fbeta)
         best_dice_threshold = self.thresholds[best_dice_index]
@@ -125,8 +128,8 @@ class GlobalBinaryDiceScore(Callback):
                     tag=self.metric_name + "/histogram",
                     figure=f,
                     global_step=runner.global_epoch,
+                    close=True,
                 )
-                plt.close(f)
 
                 summary_writer.add_pr_curve_raw(
                     tag=self.metric_name + "/pr_curve",
@@ -144,26 +147,24 @@ class GlobalBinaryDiceScore(Callback):
 
                 color = 'tab:red'
                 ax1.set_xlabel('Threshold')
-                ax1.set_ylabel('False positives', color=color)
-                ax1.plot(self.thresholds, fp_vector, color=color)
+                ax1.set_ylabel('False positive rate (FPR)', color=color)
+                ax1.plot(self.thresholds, fpr, color=color)
                 ax1.tick_params(axis='y', labelcolor=color)
 
                 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
                 color = 'tab:blue'
-                ax2.set_ylabel('False negatives', color=color)  # we already handled the x-label with ax1
-                ax2.plot(self.thresholds, fn_vector, color=color)
+                ax2.set_ylabel('False negative rate (FNR)', color=color)  # we already handled the x-label with ax1
+                ax2.plot(self.thresholds, fnr, color=color)
                 ax2.tick_params(axis='y', labelcolor=color)
 
                 fig.tight_layout()  # otherwise the right y-label is slightly clipped
                 summary_writer.add_figure(
-                    tag=self.metric_name + "/false_positives_and_negatives",
+                    tag=self.metric_name + "/fnr_fpr",
                     figure=fig,
                     global_step=runner.global_epoch,
                     close=True,
                 )
-
-                plt.show()
 
             except RuntimeError:
                 pass
