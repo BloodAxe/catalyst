@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from collections import defaultdict, Mapping, Iterable
-from typing import Any, Callable, Dict, List, Union
+from collections import defaultdict
+from typing import Any, Callable, Dict, List, Union, Mapping, Iterable
 
 import numpy as np
 import torch
