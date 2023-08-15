@@ -3,7 +3,12 @@ from typing import Tuple, List
 
 import torch
 
-from pytorch_toolbelt.inference.functional import unpad_xyxy_bboxes, pad_image_tensor, unpad_image_tensor
+from pytorch_toolbelt.inference.functional import (
+    unpad_xyxy_bboxes,
+    pad_image_tensor,
+    unpad_image_tensor,
+    pad_tensor_to_size,
+)
 from torch import nn
 
 
@@ -34,7 +39,17 @@ class SlidingWindowBatchRunner:
 
     """
 
-    def __init__(self, input_keys, output_keys, tile_size, step_size, padding_mode="constant", padding_value=0):
+    def __init__(
+        self,
+        input_keys,
+        output_keys,
+        tile_size: Tuple[int, ...],
+        step_size: Tuple[int, ...],
+        padding_mode="constant",
+        padding_value=0,
+    ):
+        if len(tile_size) != len(step_size):
+            raise ValueError("Tile size and step size must have the same length")
         self.input_keys = input_keys
         self.output_keys = output_keys
         self.tile_size = tile_size
@@ -58,33 +73,33 @@ class SlidingWindowBatchRunner:
     def __call__(self, model, batch):
         inputs = self.get_inputs(batch)
 
-        spatial_dims = inputs.shape[-self.num_spatial_dims :]
-        if len(inputs.size()) != len(spatial_dims) + 2:
-            raise ValueError(f"Expected {len(spatial_dims) + 2} spatial dimensions, got {len(inputs.size())}")
+        spatial_sizes = inputs.shape[-self.num_spatial_dims :]
+        if len(inputs.size()) != len(spatial_sizes) + 2:
+            raise ValueError(f"Expected {len(spatial_sizes) + 2} spatial dimensions, got {len(inputs.size())}")
 
         spatial_coordinates = [
             compute_tile_coordinates(tile_size, tile_step, length)
-            for tile_size, tile_step, length in zip(self.tile_size, self.step_size, spatial_dims)
+            for tile_size, tile_step, length in zip(self.tile_size, self.step_size, spatial_sizes)
         ]
         coordinates = itertools.product(*spatial_coordinates)
 
         full_res_output = None
         full_res_accumulator = None
         for c in coordinates:
-            roi = slice(0, None), slice(0, None), *c
+            roi = slice(None), slice(None), *c
             tile = inputs[roi]
-            tile, pad = pad_image_tensor(tile, self.tile_size)
+            tile, unpad_crop = pad_tensor_to_size(tile, self.tile_size)
             outputs = model(tile)
-            outputs = unpad_image_tensor(outputs, pad)
+            outputs = outputs[unpad_crop]
 
             if full_res_output is None:
                 batch_size = outputs.shape[0]
                 channels = outputs.shape[1]
                 full_res_output = torch.zeros(
-                    [batch_size, channels, *spatial_dims], dtype=torch.float32, device=outputs.device
+                    [batch_size, channels, *spatial_sizes], dtype=torch.float32, device=outputs.device
                 )
                 full_res_accumulator = torch.zeros(
-                    [batch_size, 1, *spatial_dims], dtype=torch.float32, device=outputs.device
+                    [batch_size, 1, *spatial_sizes], dtype=torch.float32, device=outputs.device
                 )
                 full_res_output[roi] += outputs
                 full_res_accumulator[roi] += 1
@@ -94,7 +109,7 @@ class SlidingWindowBatchRunner:
         return self.get_outputs(full_res_output)
 
 
-def compute_tile_coordinates(tile_size: int, step_size: int, length: int) -> List[Tuple[int, int]]:
+def compute_tile_coordinates(tile_size: int, step_size: int, length: int) -> List[slice]:
     """
     Computes the coordinates of the tiles in a sliding window.
 
@@ -112,10 +127,13 @@ def compute_tile_coordinates(tile_size: int, step_size: int, length: int) -> Lis
     tile_coordinates : list
         The coordinates of the tiles in the sliding window.
     """
-    tile_coordinates = []
-    if tile_size < length:
+    if step_size > tile_size:
+        raise ValueError("Step size must be smaller than tile size")
+
+    if length <= step_size:
         return [slice(0, length)]
 
+    tile_coordinates = []
     for i in range(0, length - tile_size + 1, step_size):
         tile_coordinates.append(slice(i, i + tile_size))
     return tile_coordinates
