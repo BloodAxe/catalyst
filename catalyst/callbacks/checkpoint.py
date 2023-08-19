@@ -16,6 +16,7 @@ from catalyst.utils.checkpoint import (
 )
 from catalyst.utils.config import save_config
 from catalyst.utils.misc import is_exception
+from pytorch_toolbelt.utils.distributed import master_node_only
 
 
 def _pack_runner(runner: "IRunner"):
@@ -591,6 +592,7 @@ class CheckpointCallback(BaseCheckpointCallback):
                 load_map=mapping,
             )
 
+    @master_node_only
     def on_stage_start(self, runner: "IRunner") -> None:
         """Setup model for stage.
 
@@ -647,6 +649,7 @@ class CheckpointCallback(BaseCheckpointCallback):
                     load_full=need_load_full,
                 )
 
+    @master_node_only
     def on_epoch_end(self, runner: "IRunner") -> None:
         """
         Collect and save checkpoint after epoch.
@@ -667,6 +670,7 @@ class CheckpointCallback(BaseCheckpointCallback):
                 minimize_metric=runner.minimize_metric,
             )
 
+    @master_node_only
     def on_stage_end(self, runner: "IRunner") -> None:
         """
         Show information about best checkpoints during the stage and
@@ -823,9 +827,11 @@ class BestMetricCheckpointCallback(BaseCheckpointCallback):
         metrics = self.get_metric(valid_metrics)
         self.save_metric(logdir, metrics)
 
+    @master_node_only
     def on_stage_start(self, state: IRunner):
         self.best_main_metric_value: float = float("+inf") if self.minimize_metric else float("-inf")
 
+    @master_node_only
     def on_epoch_end(self, state: IRunner):
         if state.stage_name.startswith("infer"):
             return
@@ -861,6 +867,7 @@ class BestMetricCheckpointCallback(BaseCheckpointCallback):
             minimize_metric=self.minimize_metric,
         )
 
+    @master_node_only
     def on_stage_end(self, state: IRunner):
         print("Top best models:")
         top_best_metrics_str = "\n".join(
@@ -874,6 +881,7 @@ class BestMetricCheckpointCallback(BaseCheckpointCallback):
     def save_metric(self, logdir: Union[str, Path], metrics: Dict) -> None:
         save_config(metrics, f"{logdir}/{self.checkpoints_dir}/{self.metrics_filename}")
 
+    @master_node_only
     def on_exception(self, state: IRunner):
         exception = state.exception
         if not is_exception(exception):
@@ -1018,6 +1026,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
         self._save_metric(logdir, metrics)
         print(f"\nSaved checkpoint at {filepath}")
 
+    @master_node_only
     def on_stage_start(self, runner: "IRunner"):
         """
         Reset iterations counter.
@@ -1032,6 +1041,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
 
         self._save_fn = save
 
+    @master_node_only
     def on_batch_end(self, runner: "IRunner"):
         """
         Save checkpoint based on batches count.
@@ -1048,6 +1058,7 @@ class IterationCheckpointCallback(BaseCheckpointCallback):
                 batch_metrics=runner.batch_metrics,
             )
 
+    @master_node_only
     def on_stage_end(self, runner: "IRunner"):
         """
         Load model specified in ``load_on_stage_end``.
