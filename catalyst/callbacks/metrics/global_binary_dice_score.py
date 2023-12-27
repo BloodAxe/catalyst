@@ -96,15 +96,15 @@ class GlobalBinaryDiceScore(Callback):
         predictions = predictions.view(-1, 1) >= thresholds
         targets = targets.view(-1, 1) > self.targets_threshold
 
-        tp = (predictions & targets).sum(dim=0).float()  # [NumThresholds]
-        fp = (predictions & ~targets).sum(dim=0).float()  # [NumThresholds]
-        fn = (~predictions & targets).sum(dim=0).float()  # [NumThresholds]
-        tn = (~predictions & ~targets).sum(dim=0).float()  # [NumThresholds]
+        tp = to_numpy((predictions & targets).sum(dim=0).float())  # [NumThresholds]
+        fp = to_numpy((predictions & ~targets).sum(dim=0).float())  # [NumThresholds]
+        fn = to_numpy((~predictions & targets).sum(dim=0).float())  # [NumThresholds]
+        tn = to_numpy((~predictions & ~targets).sum(dim=0).float())  # [NumThresholds]
 
-        self.meter.tp += to_numpy(tp)
-        self.meter.fp += to_numpy(fp)
-        self.meter.fn += to_numpy(fn)
-        self.meter.tn += to_numpy(tn)
+        self.meter.tp += tp
+        self.meter.fp += fp
+        self.meter.fn += fn
+        self.meter.tn += tn
 
     def on_loader_end(self, runner: "IRunner"):
         meter: SegmentationMeter = functools.reduce(lambda x, y: x + y, all_gather(self.meter))
