@@ -31,6 +31,7 @@ class GlobalBinaryDiceScore(Callback):
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
         targets_threshold: float = 0.5,
+        dtype: Union[torch.dtype, str] = torch.float32
     ):
         """
         :param predictions_key: name of the key in ``runner.output`` dictionary with predictions
@@ -56,6 +57,16 @@ class GlobalBinaryDiceScore(Callback):
         self.activation = instantiate_activation_block(activation) if isinstance(activation, str) else activation
         self.targets_threshold = targets_threshold
 
+        string_to_dtype = {
+            "float16": torch.float16,
+            "float32": torch.float32,
+            "float64": torch.float64,
+            "half": torch.float16,
+            "float": torch.float32,
+            "double": torch.float64,
+        }
+        self.dtype = dtype if isinstance(dtype, torch.dtype) else string_to_dtype[dtype]
+
         num_thresholds = len(self.thresholds)
         self.meter = SegmentationMeter.empty(num_thresholds)
         self.beta = beta
@@ -73,15 +84,15 @@ class GlobalBinaryDiceScore(Callback):
             predictions = self.activation(predictions)
         targets: Tensor = runner.input[self.targets_key] if self.targets_key is not None else runner.input
 
-        predictions = torch.flatten(predictions)
-        targets = torch.flatten(targets)
+        predictions = torch.flatten(predictions.to(self.dtype))
+        targets = torch.flatten(targets.to(self.dtype))
 
         if self.ignore_index is not None:
             mask = targets != self.ignore_index
             predictions = predictions[mask]
             targets = targets[mask]
 
-        thresholds = torch.from_numpy(self.thresholds).to(predictions.device).reshape(1, -1)
+        thresholds = torch.from_numpy(self.thresholds).to(device=predictions.device, dtype=self.dtype).reshape(1, -1)
         predictions = predictions.view(-1, 1) >= thresholds
         targets = targets.view(-1, 1) > self.targets_threshold
 
