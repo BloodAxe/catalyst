@@ -53,6 +53,7 @@ class BinaryDiceScore(Callback):
         :param metric_name: name of the metric to display in the logs
         :param beta: beta parameter for F-measure computation
         :param ignore_index: If not None, targets with given index are ignored during metric computation
+        :param targets_threshold: A threshold for targets binarization. Default: 0.5
 
 
         """
@@ -64,12 +65,12 @@ class BinaryDiceScore(Callback):
         self.thresholds = np.asarray(threshold, dtype=np.float32).reshape(-1)
         self.scene_key = scene_key
         self.activation = instantiate_activation_block(activation) if isinstance(activation, str) else activation
+        self.targets_threshold = targets_threshold
 
         self.num_thresholds = len(self.thresholds)
         self.per_scene_meters = {}
         self.beta = beta
         self.ignore_index = ignore_index
-        self.targets_threshold= targets_threshold
 
     def on_loader_start(self, runner: "IRunner"):
         self.per_scene_meters = {}
@@ -84,7 +85,9 @@ class BinaryDiceScore(Callback):
             predictions = self.activation(predictions)
         targets: Tensor = runner.input[self.targets_key] if self.targets_key is not None else runner.input
 
-        thresholds = torch.from_numpy(self.thresholds).to(predictions.device).reshape(1, -1)
+        thresholds = (
+            torch.from_numpy(self.thresholds).to(device=predictions.device, dtype=predictions.dtype).reshape(1, -1)
+        )
 
         for scene_id, prediction, target in zip(scenes, predictions, targets):
             if self.ignore_index is not None:
@@ -95,8 +98,8 @@ class BinaryDiceScore(Callback):
                 if len(target) == 0:
                     continue
 
-            prediction = prediction.view(-1, 1) >= thresholds
-            target = target.view(-1, 1) > self.targets_threshold
+            predictions = predictions.view(-1, 1) >= thresholds
+            targets = targets.view(-1, 1) > self.targets_threshold
 
             tp = to_numpy((prediction & target).sum(dim=0).float())  # [NumThresholds]
             fp = to_numpy((prediction & ~target).sum(dim=0).float())  # [NumThresholds]
