@@ -51,8 +51,9 @@ class ExpEMADecay(EMADecay):
 
 
 class BetaDecay(EMADecay):
-    def __init__(self, beta):
+    def __init__(self, beta, max_decay: float = 0.999):
         self.beta = beta
+        self.max_decay = max_decay
 
     def __repr__(self):
         return f"BetaDecay(beta={self.beta})"
@@ -60,7 +61,7 @@ class BetaDecay(EMADecay):
     def __call__(self, step: int, total_steps: int):
         p = step / total_steps
         decay = 1 - np.exp(-p) ** self.beta
-        return decay
+        return min(decay, self.max_decay)
 
 
 class ExponentialMovingAverage:
