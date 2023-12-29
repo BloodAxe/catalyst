@@ -39,6 +39,7 @@ class BinaryDiceScore(Callback):
         metric_threshold_name="metrics/mean_dice_threshold",
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
+        targets_threshold: float = 0.5,
     ):
         """
         :param predictions_key: name of the key in ``runner.output`` dictionary with predictions
@@ -68,6 +69,7 @@ class BinaryDiceScore(Callback):
         self.per_scene_meters = {}
         self.beta = beta
         self.ignore_index = ignore_index
+        self.targets_threshold= targets_threshold
 
     def on_loader_start(self, runner: "IRunner"):
         self.per_scene_meters = {}
@@ -94,26 +96,28 @@ class BinaryDiceScore(Callback):
                     continue
 
             prediction = prediction.view(-1, 1) >= thresholds
-            target = target.view(-1, 1) > 0
+            target = target.view(-1, 1) > self.targets_threshold
 
-            tp = (prediction & target).sum(dim=0).float()  # [NumThresholds]
-            fp = (prediction & ~target).sum(dim=0).float()  # [NumThresholds]
-            fn = (~prediction & target).sum(dim=0).float()  # [NumThresholds]
-            tn = (~prediction & ~target).sum(dim=0).float()  # [NumThresholds]
+            tp = to_numpy((prediction & target).sum(dim=0).float())  # [NumThresholds]
+            fp = to_numpy((prediction & ~target).sum(dim=0).float())  # [NumThresholds]
+            fn = to_numpy((~prediction & target).sum(dim=0).float())  # [NumThresholds]
+            tn = to_numpy((~prediction & ~target).sum(dim=0).float())  # [NumThresholds]
 
             if scene_id not in self.per_scene_meters:
                 self.per_scene_meters[scene_id] = SegmentationMeter.empty(self.num_thresholds)
 
             meter = self.per_scene_meters[scene_id]
-            meter.tp += to_numpy(tp)
-            meter.fp += to_numpy(fp)
-            meter.fn += to_numpy(fn)
-            meter.tn += to_numpy(tn)
+            meter.tp += tp
+            meter.fp += fp
+            meter.fn += fn
+            meter.tn += tn
 
     def on_loader_end(self, runner: "IRunner"):
         all_scenes: Mapping[str, SegmentationMeter] = reduce_dict_sum(self.per_scene_meters)
+
+        scene_names = list(all_scenes.keys())
         dice_fbeta = np.stack(
-            [meter.fbeta(self.beta) for meter in all_scenes.values()], axis=0
+            [all_scenes[scene_name].fbeta(self.beta) for scene_name in scene_names], axis=0
         )  # [NumScenes, NumThresholds]
         mean_dice_fbeta = np.mean(dice_fbeta, axis=0)  # [NumThresholds]
 
@@ -130,10 +134,14 @@ class BinaryDiceScore(Callback):
             try:
                 summary_writer: SummaryWriter = get_tensorboard_logger(runner)
                 f = plt.figure(figsize=(10, 10))
-                plt.plot(self.thresholds, mean_dice_fbeta)
+                plt.plot(self.thresholds, mean_dice_fbeta, label="Average", linewidth=3, color="red")
                 plt.xlabel("Threshold")
                 plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
                 plt.grid()
+
+                for scene_name, dice_fbeta in zip(scene_names, dice_fbeta):
+                    plt.plot(self.thresholds, dice_fbeta, alpha=0.5, linewidth=2, label=scene_name)
+
                 plt.title(f"Best threshold: {best_dice_threshold:.3f} | Dice: {best_dice_value:.3f}")
                 plt.tight_layout()
 
