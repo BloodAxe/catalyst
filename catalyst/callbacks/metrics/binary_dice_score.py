@@ -91,6 +91,9 @@ class BinaryDiceScore(Callback):
 
         for scene_id, prediction, target in zip(scenes, predictions, targets):
             if self.ignore_index is not None:
+                target = torch.flatten(target)
+                prediction = torch.flatten(prediction)
+
                 mask = target != self.ignore_index
                 prediction = prediction[mask]
                 target = target[mask]
@@ -98,8 +101,8 @@ class BinaryDiceScore(Callback):
                 if len(target) == 0:
                     continue
 
-            predictions = predictions.view(-1, 1) >= thresholds
-            targets = targets.view(-1, 1) > self.targets_threshold
+            prediction = prediction.view(-1, 1) >= thresholds
+            target = target.view(-1, 1) > self.targets_threshold
 
             tp = to_numpy((prediction & target).sum(dim=0).float())  # [NumThresholds]
             fp = to_numpy((prediction & ~target).sum(dim=0).float())  # [NumThresholds]
