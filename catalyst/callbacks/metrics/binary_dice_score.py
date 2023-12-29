@@ -139,7 +139,7 @@ class BinaryDiceScore(Callback):
         if is_main_process() and num_thresholds > 1:
             try:
                 summary_writer: SummaryWriter = get_tensorboard_logger(runner)
-                f = plt.figure(figsize=(10, 10))
+                f = plt.figure(figsize=(16, 16))
                 plt.plot(self.thresholds, mean_dice_fbeta, label="Average", linewidth=3, color="red")
                 plt.xlabel("Threshold")
                 plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
@@ -149,6 +149,7 @@ class BinaryDiceScore(Callback):
                     plt.plot(self.thresholds, dice_fbeta, alpha=0.5, linewidth=2, label=scene_name)
 
                 plt.title(f"Best threshold: {best_dice_threshold:.3f} | Dice: {best_dice_value:.3f}")
+                plt.legend()
                 plt.tight_layout()
 
                 summary_writer.add_figure(
