@@ -70,7 +70,7 @@ class IMetricCallback(ABC, Callback):
         """Specifies used metric function."""
         pass
 
-    def _compute_metric_value(self, output: Dict, input: Dict):
+    def _compute_metric_value(self, output: Dict, input: Dict, runner):
         """
         Compute metric for value-based case.
         For example accuracy on `y_pred` and `y_true`.
@@ -85,13 +85,20 @@ class IMetricCallback(ABC, Callback):
             computed metric
         """
         # Dict merging allows to access keys from outputs and inputs interchangably
-        metric_output = self._get_output({**input, **output}, self.output_key)
-        metric_input = self._get_input({**output, **input}, self.input_key)
+        try:
+            metric_output = self._get_output({**input, **output}, self.output_key)
+        except KeyError as e:
+            raise KeyError(f"Cannot get key {e} in {self.__class__.__name__} callback")
+
+        try:
+            metric_input = self._get_input({**output, **input}, self.input_key)
+        except KeyError as e:
+            raise KeyError(f"Cannot get key {e} in {self.__class__.__name__} callback")
 
         metric = self.metric_fn(metric_output, metric_input, **self.metrics_kwargs)
         return metric
 
-    def _compute_metric_key_value(self, output: Dict, input: Dict):
+    def _compute_metric_key_value(self, output: Dict, input: Dict, runner):
         """
         Compute metric for key-value-based case.
         For example accuracy on `y_pred` and `y_true` and `sample_weights`.
@@ -108,7 +115,7 @@ class IMetricCallback(ABC, Callback):
         output = self._get_output(output, self.output_key)
         input = self._get_input(input, self.input_key)
 
-        metric = self.metric_fn(**output, **input, **self.metrics_kwargs)
+        metric = self.metric_fn(**output, **input, __runner__ = runner, **self.metrics_kwargs)
         return metric
 
     def _process_computed_metric(self, metric: Union[Dict, float]) -> Dict:
@@ -139,7 +146,7 @@ class IBatchMetricCallback(IMetricCallback):
 
     def on_batch_end(self, runner: "IRunner") -> None:
         """Computes metrics and add them to batch metrics."""
-        metrics = self._compute_metric(runner.output, runner.input)
+        metrics = self._compute_metric(runner.output, runner.input, runner)
         metrics = self._process_computed_metric(metrics)
         runner.batch_metrics.update(**metrics)
 
