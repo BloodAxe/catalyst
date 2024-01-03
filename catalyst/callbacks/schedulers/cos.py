@@ -101,7 +101,8 @@ class CosineDecaySchedulerCallback(ISchedulerCallback):
         else:
 
             # TODO: If gradient accumulation is used, we must account for this and multiply self.warmup_num_steps * accumulation
-            train_loader_len = len(runner.loaders["train"])
+            train_loader_len = sum(len(loader) for loader_name, loader in runner.loaders.items() if "train" in loader_name)
+
             total_warmup_steps = self.warmup_num_steps
             total_flat_steps = self.num_flat_epochs * train_loader_len
             total_cooldown_steps = self.num_cooldown_epochs * train_loader_len
