@@ -40,6 +40,8 @@ class BinaryDiceScore(Callback):
         beta: float = 1.0,
         ignore_index: Optional[int] = None,
         targets_threshold: float = 0.5,
+        figsize=(16, 16),
+        dpi=240,
     ):
         """
         :param predictions_key: name of the key in ``runner.output`` dictionary with predictions
@@ -71,6 +73,9 @@ class BinaryDiceScore(Callback):
         self.per_scene_meters = {}
         self.beta = beta
         self.ignore_index = ignore_index
+
+        self.figsize = figsize
+        self.dpi = dpi
 
     def on_loader_start(self, runner: "IRunner"):
         self.per_scene_meters = {}
@@ -139,7 +144,7 @@ class BinaryDiceScore(Callback):
         if is_main_process() and num_thresholds > 1:
             try:
                 summary_writer: SummaryWriter = get_tensorboard_logger(runner)
-                f = plt.figure(figsize=(16, 16))
+                f = plt.figure(figsize=self.figsize, dpi=self.dpi)
                 plt.plot(self.thresholds, mean_dice_fbeta, label="Average", linewidth=3, color="red")
                 plt.xlabel("Threshold")
                 plt.ylabel(f"Dice F{self.beta:.2f} (Averaged per scene)")
