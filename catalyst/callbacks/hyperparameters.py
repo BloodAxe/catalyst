@@ -31,7 +31,9 @@ class HyperParametersCallback(Callback):
         hparam_dict = self.hparam_dict.copy()
         hparam_dict["stage"] = state.stage_name
 
+        # Exclude metric names starting with "_"
+        metric_dict = dict((key,value) for key, value in state.best_valid_metrics.items() if not key.startswith("_"))
         logger.add_hparams(
             hparam_dict=self.hparam_dict,
-            metric_dict=state.best_valid_metrics,
+            metric_dict=metric_dict,
         )
