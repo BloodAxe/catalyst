@@ -74,7 +74,7 @@ class BinaryDiceScore(Callback):
         self.beta = beta
         self.ignore_index = ignore_index
 
-        self.figsize = figsize
+        self.figsize = tuple(figsize)
         self.dpi = dpi
 
     def on_loader_start(self, runner: "IRunner"):
