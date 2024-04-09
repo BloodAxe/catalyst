@@ -2,9 +2,11 @@ from typing import Optional, Callable
 
 import numpy as np
 import torch
+from sklearn.metrics import multilabel_confusion_matrix
 from torch import Tensor
 
 from catalyst.core import Callback, CallbackOrder, IRunner
+from pytorch_toolbelt.utils import to_numpy, all_gather
 
 
 class F1ScoreCallback(Callback):
@@ -19,10 +21,11 @@ class F1ScoreCallback(Callback):
         outputs_to_labels: Callable[[Tensor], Tensor],
         targets_key: str = "targets",
         predictions_key: str = "logits",
-        prefix: str = "f1",
+        prefix: str = "metrics/f1",
         average="macro",
         ignore_index: Optional[int] = None,
         zero_division="warn",
+        targets_to_labels: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         """
         :param targets_key: input key to use for precision calculation;
@@ -40,6 +43,7 @@ class F1ScoreCallback(Callback):
         self.average = average
         self.confusion_matrix = None
         self.zero_division = zero_division
+        self.targets_to_labels = targets_to_labels
 
     def on_loader_start(self, state):
         self.confusion_matrix = np.zeros((self.num_classes, 2, 2), dtype=np.long)
@@ -48,6 +52,9 @@ class F1ScoreCallback(Callback):
     def on_batch_end(self, runner: IRunner):
         pred_labels = self.outputs_to_labels(runner.output[self.predictions_key])
         true_labels = runner.input[self.targets_key].type_as(pred_labels)
+
+        if callable(self.targets_to_labels):
+            true_labels = self.targets_to_labels(true_labels)
 
         true_labels = true_labels.view(-1)
         pred_labels = pred_labels.view(-1)

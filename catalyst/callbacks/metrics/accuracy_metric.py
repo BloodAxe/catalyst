@@ -22,6 +22,7 @@ class AccuracyMetricCallback(Callback):
         prefix: str = "metrics/accuracy",
         log_per_batch: bool = False,
         ignore_index: Optional[int] = None,
+        targets_to_labels=None,
     ):
         """
         Args:
@@ -36,6 +37,7 @@ class AccuracyMetricCallback(Callback):
         self.targets_key = targets_key
         self.ignore_index = ignore_index
         self.outputs_to_labels = outputs_to_labels
+        self.targets_to_labels = targets_to_labels
         self.correct = 0
         self.totals = 0
         self.log_per_batch = log_per_batch
@@ -55,6 +57,9 @@ class AccuracyMetricCallback(Callback):
             pred_labels = pred_labels > self.outputs_to_labels
         elif callable(self.outputs_to_labels):
             pred_labels = self.outputs_to_labels(pred_labels)
+
+        if callable(self.targets_to_labels):
+            true_labels = self.targets_to_labels(true_labels)
 
         true_labels = true_labels.view(-1)
         pred_labels = pred_labels.view(-1)

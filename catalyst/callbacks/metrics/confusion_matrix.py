@@ -25,6 +25,7 @@ class ConfusionMatrixCallback(Callback):
         class_names: List[str] = None,
         num_classes: int = None,
         ignore_index: Optional[int] = None,
+        targets_to_labels: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         """
         :param targets_key: input key to use for precision calculation;
@@ -44,6 +45,7 @@ class ConfusionMatrixCallback(Callback):
         self.ignore_index = ignore_index
         self.confusion_matrix = None
         self.outputs_to_labels = outputs_to_labels
+        self.targets_to_labels = targets_to_labels
 
     def on_loader_start(self, state):
         self.confusion_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
@@ -57,6 +59,9 @@ class ConfusionMatrixCallback(Callback):
             predictions = predictions > self.outputs_to_labels
         elif callable(self.outputs_to_labels):
             predictions = self.outputs_to_labels(predictions)
+
+        if callable(self.targets_to_labels):
+            targets = self.targets_to_labels(targets)
 
         if predictions.size() != targets.size():
             raise RuntimeError(

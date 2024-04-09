@@ -27,11 +27,12 @@ class RocAucMetricCallback(Callback):
         outputs_to_probas: Optional[Callable[[Tensor], Tensor]] = torch.sigmoid,
         targets_key: str = "targets",
         predictions_key: str = "logits",
-        prefix: str = "metrics/roc_auc",
+        metric_name: str = "metrics/roc_auc",
         average: str = "macro",
         ignore_index: Optional[int] = None,
         log_pr_curve: bool = True,
         fix_nans: bool = False,
+        score_only_present_classes: bool = False,
     ):
         """
         Args:
@@ -39,7 +40,7 @@ class RocAucMetricCallback(Callback):
                 specifies our `y_true`
             predictions_key: output key to use for accuracy calculation;
                 specifies our `y_pred`
-            prefix: key for the metric's name
+            metric_name: key for the metric's name
         """
         if outputs_to_probas is None:
             outputs_to_probas = nn.Identity()
@@ -51,7 +52,7 @@ class RocAucMetricCallback(Callback):
             raise ValueError(f"Unsupported type of outputs_to_probas={outputs_to_probas}")
 
         super().__init__(CallbackOrder.Metric)
-        self.prefix = prefix
+        self.metric_name = metric_name
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
@@ -63,6 +64,7 @@ class RocAucMetricCallback(Callback):
         self.fix_nans = fix_nans
         self._get_targets = get_dictkey_auto_fn(targets_key)
         self._get_predictions = get_dictkey_auto_fn(predictions_key)
+        self.score_only_present_classes = score_only_present_classes
 
     def on_loader_start(self, state):
         self.y_trues = []
@@ -95,13 +97,18 @@ class RocAucMetricCallback(Callback):
         if self.fix_nans:
             y_preds[~np.isfinite(y_preds)] = 0.5
 
+        if self.score_only_present_classes:
+            mask = y_trues.sum(axis=0) > 0
+            y_trues = y_trues[:, mask]
+            y_preds = y_preds[:, mask]
+
         score = roc_auc_score(y_true=y_trues, y_score=y_preds, average=self.average)
-        runner.loader_metrics[self.prefix] = float(score)
+        runner.loader_metrics[self.metric_name] = float(score)
 
         if self.log_pr_curve and is_main_process():
             logger = get_tensorboard_logger(runner)
             logger.add_pr_curve(
-                self.prefix,
+                self.metric_name,
                 predictions=y_preds,
                 labels=y_trues,
                 global_step=runner.global_epoch,
