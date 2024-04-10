@@ -78,10 +78,12 @@ class RocAucMetricCallback(Callback):
         if self.outputs_to_probas is not None:
             pred_probas = self.outputs_to_probas(pred_probas)
 
-        y_trues = to_numpy(true_labels).reshape(-1)
-        y_preds = to_numpy(pred_probas).reshape(-1)
+        y_trues = to_numpy(true_labels)
+        y_preds = to_numpy(pred_probas)
 
         if self.ignore_index is not None:
+            y_trues = y_trues.reshape(-1)
+            y_preds = y_preds.reshape(-1)
             include_mask = y_trues != self.ignore_index
             y_trues = y_trues[include_mask]
             y_preds = y_preds[include_mask]
