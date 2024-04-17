@@ -348,7 +348,11 @@ class MetricAggregationCallback(Callback):
             if self.mode == "weighted_sum":
                 result = [metrics[key] * value for key, value in self.metrics.items()]
             else:
-                result = [metrics[key] for key in self.metrics]
+                try:
+                    result = [metrics[key] for key in self.metrics]
+                except KeyError:
+                    logger.exception(f"KeyError in MetricAggregationCallback. Requested keys: {self.metrics}. Available keys: {metrics.keys()}")
+                    raise
         else:
             result = list(metrics.values())
         return result

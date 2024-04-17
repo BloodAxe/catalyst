@@ -24,7 +24,6 @@ class RocAucMetricCallback(Callback):
 
     def __init__(
         self,
-        outputs_to_probas: Optional[Callable[[Tensor], Tensor]] = torch.sigmoid,
         targets_key: str = "targets",
         predictions_key: str = "logits",
         metric_name: str = "metrics/roc_auc",
@@ -33,6 +32,8 @@ class RocAucMetricCallback(Callback):
         log_pr_curve: bool = True,
         fix_nans: bool = False,
         score_only_present_classes: bool = False,
+        outputs_transform_fn: Optional[Callable[[Tensor], Tensor]] = None,
+        targets_transforms_fn: Optional[Callable[[Tensor], Tensor]] = None
     ):
         """
         Args:
@@ -42,21 +43,31 @@ class RocAucMetricCallback(Callback):
                 specifies our `y_pred`
             metric_name: key for the metric's name
         """
-        if outputs_to_probas is None:
-            outputs_to_probas = nn.Identity()
-        elif isinstance(outputs_to_probas, str):
-            outputs_to_probas = instantiate_activation_block(outputs_to_probas)
-        elif isinstance(outputs_to_probas, typing.Callable):
-            outputs_to_probas = outputs_to_probas
+        if outputs_transform_fn is None:
+            outputs_transform_fn = nn.Identity()
+        elif isinstance(outputs_transform_fn, str):
+            outputs_transform_fn = instantiate_activation_block(outputs_transform_fn)
+        elif isinstance(outputs_transform_fn, typing.Callable):
+            outputs_transform_fn = outputs_transform_fn
         else:
-            raise ValueError(f"Unsupported type of outputs_to_probas={outputs_to_probas}")
+            raise ValueError(f"Unsupported type of outputs_transform_fn={outputs_transform_fn}")
+
+        if targets_transforms_fn is None:
+            targets_transforms_fn = nn.Identity()
+        elif isinstance(targets_transforms_fn, str):
+            targets_transforms_fn = instantiate_activation_block(targets_transforms_fn)
+        elif isinstance(targets_transforms_fn, typing.Callable):
+            targets_transforms_fn = targets_transforms_fn
+        else:
+            raise ValueError(f"Unsupported type of targets_transforms_fn={targets_transforms_fn}")
 
         super().__init__(CallbackOrder.Metric)
         self.metric_name = metric_name
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
-        self.outputs_to_probas = outputs_to_probas
+        self.outputs_transform_fn = outputs_transform_fn
+        self.targets_transforms_fn = targets_transforms_fn
         self.y_trues = []
         self.y_preds = []
         self.average = average
@@ -72,11 +83,8 @@ class RocAucMetricCallback(Callback):
 
     @torch.no_grad()
     def on_batch_end(self, runner):
-        pred_probas = runner.output[self.predictions_key].float()
-        true_labels = runner.input[self.targets_key].float()
-
-        if self.outputs_to_probas is not None:
-            pred_probas = self.outputs_to_probas(pred_probas)
+        pred_probas = self.outputs_transform_fn(runner.output[self.predictions_key].float())
+        true_labels = self.targets_transforms_fn(runner.input[self.targets_key].float())
 
         y_trues = to_numpy(true_labels)
         y_preds = to_numpy(pred_probas)
@@ -97,7 +105,7 @@ class RocAucMetricCallback(Callback):
         y_preds = np.concatenate(all_gather(self.y_preds))
 
         if self.fix_nans:
-            y_preds[~np.isfinite(y_preds)] = 0.5
+            y_preds = np.nan_to_num(y_preds, copy=False, nan=0.5, neginf=0.5, posinf=0.5)
 
         if self.score_only_present_classes:
             mask = y_trues.sum(axis=0) > 0
