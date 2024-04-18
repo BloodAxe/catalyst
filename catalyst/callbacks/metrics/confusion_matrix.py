@@ -1,8 +1,15 @@
-from typing import Callable, List, Optional
+import math
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 import torch
-from pytorch_toolbelt.utils import is_main_process, all_gather, plot_confusion_matrix, render_figure_to_tensor
+from pytorch_toolbelt.utils import (
+    is_main_process,
+    all_gather,
+    plot_confusion_matrix,
+    render_figure_to_tensor,
+    plot_compressed_confusion_matrix,
+)
 from sklearn.metrics import confusion_matrix
 from torch import Tensor
 
@@ -27,13 +34,16 @@ class ConfusionMatrixCallback(Callback):
         class_names: List[str] = None,
         num_classes: int = None,
         ignore_index: Optional[int] = None,
+        use_compressed_plot=Union[bool, None],
+        compressed_plot_classes_threshold: int = 64,
     ):
         """
-        :param targets_key: input key to use for precision calculation;
-            specifies our `y_true`.
-        :param predictions_key: output key to use for precision calculation;
-            specifies our `y_pred`.
+        :param targets_key: input key to use for precision calculation; specifies our `y_true`.
+        :param predictions_key: output key to use for precision calculation; specifies our `y_pred`.
         :param ignore_index: same meaning as in nn.CrossEntropyLoss
+        :param class_names: list of class names
+        :param use_compressed_plot: if True, use compressed plot
+        :param compressed_plot_classes_threshold: if number of classes is greater than this value, use compressed plot
         """
         super().__init__(CallbackOrder.Metric)
         self.prefix = prefix
@@ -41,6 +51,9 @@ class ConfusionMatrixCallback(Callback):
         self.num_classes = num_classes if class_names is None else len(class_names)
         if self.num_classes is None:
             raise ValueError("You must specify either class_names or num_classes")
+        if use_compressed_plot is None:
+            use_compressed_plot = self.num_classes > compressed_plot_classes_threshold
+        self.use_compressed_plot = bool(use_compressed_plot)
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
@@ -87,13 +100,21 @@ class ConfusionMatrixCallback(Callback):
         cm = np.sum(all_gather(self.confusion_matrix), axis=0)
 
         if is_main_process():
-            fig = plot_confusion_matrix(
-                cm,
-                figsize=(6 + num_classes // 3, 6 + num_classes // 3),
-                class_names=class_names,
-                normalize=True,
-                noshow=True,
-            )
+            if self.use_compressed_plot:
+                fig = plot_compressed_confusion_matrix(
+                    cm,
+                    figsize=(6 + int(math.ceil(math.log2(num_classes))), 6 + int(math.ceil(math.log2(num_classes)))),
+                    normalize=True,
+                    noshow=True,
+                )
+            else:
+                fig = plot_confusion_matrix(
+                    cm,
+                    figsize=(6 + num_classes // 3, 6 + num_classes // 3),
+                    class_names=class_names,
+                    normalize=True,
+                    noshow=True,
+                )
             fig = render_figure_to_tensor(fig)
 
             logger = get_tensorboard_logger(runner)
