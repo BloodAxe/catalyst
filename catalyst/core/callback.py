@@ -1,5 +1,12 @@
 import logging
+import numbers
+import typing
 from enum import IntFlag
+from functools import partial
+
+import torch
+from torch import nn
+from pytorch_toolbelt.modules import instantiate_activation_block
 
 
 class CallbackNode(IntFlag):
@@ -337,10 +344,27 @@ class CallbackWrapper(Callback):
             self.callback.on_exception(runner)
 
 
+class CallbackUtils:
+    @classmethod
+    def get_transform_fn(self, transform_fn: typing.Union[str, typing.Callable, numbers.Number, None]):
+        if transform_fn is None:
+            transform_fn = nn.Identity()
+        elif isinstance(transform_fn, numbers.Number):
+            transform_fn = partial(torch.ge, other=float(transform_fn))
+        elif isinstance(transform_fn, str):
+            transform_fn = instantiate_activation_block(transform_fn)
+        elif isinstance(transform_fn, typing.Callable):
+            transform_fn = transform_fn
+        else:
+            raise ValueError(f"Unsupported type of transform_fn={transform_fn}")
+        return transform_fn
+
+
 WrapperCallback = CallbackWrapper
 
 __all__ = [
     "Callback",
+    "CallbackUtils",
     "CallbackNode",
     "CallbackOrder",
     "CallbackScope",

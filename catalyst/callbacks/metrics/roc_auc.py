@@ -7,6 +7,7 @@ from sklearn.metrics import roc_auc_score
 from torch import Tensor, nn
 
 from catalyst.core import Callback, CallbackOrder
+from catalyst.core.callback import CallbackUtils
 from catalyst.utils import get_dictkey_auto_fn
 
 __all__ = ["RocAucMetricCallback"]
@@ -33,7 +34,7 @@ class RocAucMetricCallback(Callback):
         fix_nans: bool = False,
         score_only_present_classes: bool = False,
         outputs_transform_fn: Optional[Callable[[Tensor], Tensor]] = None,
-        targets_transforms_fn: Optional[Callable[[Tensor], Tensor]] = None
+        targets_transforms_fn: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         """
         Args:
@@ -43,31 +44,14 @@ class RocAucMetricCallback(Callback):
                 specifies our `y_pred`
             metric_name: key for the metric's name
         """
-        if outputs_transform_fn is None:
-            outputs_transform_fn = nn.Identity()
-        elif isinstance(outputs_transform_fn, str):
-            outputs_transform_fn = instantiate_activation_block(outputs_transform_fn)
-        elif isinstance(outputs_transform_fn, typing.Callable):
-            outputs_transform_fn = outputs_transform_fn
-        else:
-            raise ValueError(f"Unsupported type of outputs_transform_fn={outputs_transform_fn}")
-
-        if targets_transforms_fn is None:
-            targets_transforms_fn = nn.Identity()
-        elif isinstance(targets_transforms_fn, str):
-            targets_transforms_fn = instantiate_activation_block(targets_transforms_fn)
-        elif isinstance(targets_transforms_fn, typing.Callable):
-            targets_transforms_fn = targets_transforms_fn
-        else:
-            raise ValueError(f"Unsupported type of targets_transforms_fn={targets_transforms_fn}")
 
         super().__init__(CallbackOrder.Metric)
         self.metric_name = metric_name
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
-        self.outputs_transform_fn = outputs_transform_fn
-        self.targets_transforms_fn = targets_transforms_fn
+        self.outputs_transform_fn = CallbackUtils.get_transform_fn(outputs_transform_fn)
+        self.targets_transforms_fn = CallbackUtils.get_transform_fn(targets_transforms_fn)
         self.y_trues = []
         self.y_preds = []
         self.average = average

@@ -8,6 +8,7 @@ from torch import Tensor
 
 from catalyst.callbacks.visualization import get_tensorboard_logger
 from catalyst.core import Callback, CallbackOrder, IRunner
+from catalyst.core.callback import CallbackUtils
 
 
 class ConfusionMatrixCallback(Callback):
@@ -18,14 +19,14 @@ class ConfusionMatrixCallback(Callback):
 
     def __init__(
         self,
-        outputs_to_labels: Callable[[Tensor], Tensor],
-        targets_key: str = "targets",
-        predictions_key: str = "logits",
+        outputs_transform_fn: Optional[Callable[[Tensor], Tensor]],
+        targets_transforms_fn: Optional[Callable[[Tensor], Tensor]],
+        targets_key: str,
+        predictions_key: str,
         prefix: str = "confusion_matrix",
         class_names: List[str] = None,
         num_classes: int = None,
         ignore_index: Optional[int] = None,
-        targets_to_labels: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         """
         :param targets_key: input key to use for precision calculation;
@@ -44,24 +45,16 @@ class ConfusionMatrixCallback(Callback):
         self.targets_key = targets_key
         self.ignore_index = ignore_index
         self.confusion_matrix = None
-        self.outputs_to_labels = outputs_to_labels
-        self.targets_to_labels = targets_to_labels
+        self.outputs_transform_fn = CallbackUtils.get_transform_fn(outputs_transform_fn)
+        self.targets_transforms_fn = CallbackUtils.get_transform_fn(targets_transforms_fn)
 
     def on_loader_start(self, state):
         self.confusion_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
 
     @torch.no_grad()
     def on_batch_end(self, runner: IRunner):
-        predictions = runner.output[self.predictions_key]
-        targets = runner.input[self.targets_key]
-
-        if isinstance(self.outputs_to_labels, float):
-            predictions = predictions > self.outputs_to_labels
-        elif callable(self.outputs_to_labels):
-            predictions = self.outputs_to_labels(predictions)
-
-        if callable(self.targets_to_labels):
-            targets = self.targets_to_labels(targets)
+        predictions = self.outputs_transform_fn(runner.output[self.predictions_key])
+        targets = self.targets_transforms_fn(runner.input[self.targets_key])
 
         if predictions.size() != targets.size():
             raise RuntimeError(

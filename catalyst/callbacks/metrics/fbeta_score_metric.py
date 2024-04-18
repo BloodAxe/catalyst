@@ -8,6 +8,8 @@ from torch import Tensor
 from catalyst.core import Callback, CallbackOrder, IRunner
 from pytorch_toolbelt.utils import to_numpy, all_gather
 
+from catalyst.core.callback import CallbackUtils
+
 
 class F1ScoreCallback(Callback):
     """
@@ -17,15 +19,15 @@ class F1ScoreCallback(Callback):
 
     def __init__(
         self,
+        outputs_transform_fn: Optional[Callable[[Tensor], Tensor]],
+        targets_transforms_fn: Optional[Callable[[Tensor], Tensor]],
         num_classes: int,
-        outputs_to_labels: Callable[[Tensor], Tensor],
         targets_key: str = "targets",
         predictions_key: str = "logits",
         prefix: str = "metrics/f1",
         average="macro",
         ignore_index: Optional[int] = None,
         zero_division="warn",
-        targets_to_labels: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         """
         :param targets_key: input key to use for precision calculation;
@@ -39,36 +41,38 @@ class F1ScoreCallback(Callback):
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
-        self.outputs_to_labels = outputs_to_labels
         self.average = average
         self.confusion_matrix = None
         self.zero_division = zero_division
-        self.targets_to_labels = targets_to_labels
+        self.outputs_transform_fn = CallbackUtils.get_transform_fn(outputs_transform_fn)
+        self.targets_transforms_fn = CallbackUtils.get_transform_fn(targets_transforms_fn)
 
     def on_loader_start(self, state):
         self.confusion_matrix = np.zeros((self.num_classes, 2, 2), dtype=np.long)
 
     @torch.no_grad()
     def on_batch_end(self, runner: IRunner):
-        pred_labels = self.outputs_to_labels(runner.output[self.predictions_key])
-        true_labels = runner.input[self.targets_key].type_as(pred_labels)
+        predictions = self.outputs_transform_fn(runner.output[self.predictions_key])
+        targets = self.targets_transforms_fn(runner.input[self.targets_key])
 
-        if callable(self.targets_to_labels):
-            true_labels = self.targets_to_labels(true_labels)
+        if predictions.size() != targets.size():
+            raise RuntimeError(
+                "Shape of predictions and targets must be equal. Got {predictions.size()} and {targets.size()}."
+            )
 
-        true_labels = true_labels.view(-1)
-        pred_labels = pred_labels.view(-1)
+        targets = targets.view(-1)
+        predictions = predictions.view(-1)
 
         if self.ignore_index is not None:
-            mask = true_labels != self.ignore_index
-            pred_labels = torch.masked_select(pred_labels, mask)
-            true_labels = torch.masked_select(true_labels, mask)
+            mask = targets != self.ignore_index
+            predictions = torch.masked_select(predictions, mask)
+            targets = torch.masked_select(targets, mask)
 
-        if len(true_labels):
-            true_labels = to_numpy(true_labels)
-            pred_labels = to_numpy(pred_labels)
+        if len(targets):
+            targets = to_numpy(targets)
+            predictions = to_numpy(predictions)
             batch_cm = multilabel_confusion_matrix(
-                y_true=true_labels, y_pred=pred_labels, labels=np.arange(self.num_classes, dtype=int)
+                y_true=targets, y_pred=predictions, labels=np.arange(self.num_classes, dtype=int)
             )
             self.confusion_matrix = self.confusion_matrix + batch_cm
 
