@@ -5,8 +5,10 @@ from .binary_dice_score import BinaryDiceScore
 from .binary_iou_score import BinaryIoUScore
 from .output_distribution import OutputDistributionCallback
 from .roc_auc import RocAucMetricCallback
+from .fbeta_score_metric import FBetaScoreCallback
 
 __all__ = [
+    "FBetaScoreCallback",
     "AccuracyMetricCallback",
     "BinaryDiceScore",
     "BinaryIoUScore",

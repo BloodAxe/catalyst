@@ -11,9 +11,9 @@ from pytorch_toolbelt.utils import to_numpy, all_gather
 from catalyst.core.callback import CallbackUtils
 
 
-class F1ScoreCallback(Callback):
+class FBetaScoreCallback(Callback):
     """
-    Compute F1 metric score
+    Compute FBeta metric score
 
     """
 
@@ -22,9 +22,10 @@ class F1ScoreCallback(Callback):
         outputs_transform_fn: Optional[Callable[[Tensor], Tensor]],
         targets_transforms_fn: Optional[Callable[[Tensor], Tensor]],
         num_classes: int,
-        targets_key: str = "targets",
-        predictions_key: str = "logits",
-        prefix: str = "metrics/f1",
+        targets_key: str,
+        predictions_key: str,
+        metric_name: str,
+        beta: float = 1,
         average="macro",
         ignore_index: Optional[int] = None,
         zero_division="warn",
@@ -37,12 +38,13 @@ class F1ScoreCallback(Callback):
         """
         super().__init__(CallbackOrder.Metric)
         self.num_classes = num_classes
-        self.prefix = prefix
+        self.prefix = metric_name
         self.predictions_key = predictions_key
         self.targets_key = targets_key
         self.ignore_index = ignore_index
         self.average = average
         self.confusion_matrix = None
+        self.beta = beta
         self.zero_division = zero_division
         self.outputs_transform_fn = CallbackUtils.get_transform_fn(outputs_transform_fn)
         self.targets_transforms_fn = CallbackUtils.get_transform_fn(targets_transforms_fn)
@@ -78,18 +80,25 @@ class F1ScoreCallback(Callback):
 
     def on_loader_end(self, runner: IRunner):
         MCM = np.sum(all_gather(self.confusion_matrix), axis=0)
-        metric = self._f1_from_confusion_matrix(MCM, average=self.average, zero_division=self.zero_division)
-        runner.loader_metrics[self.prefix] = metric
+        metric = self._f1_from_confusion_matrix(
+            MCM, beta=self.beta, average=self.average, zero_division=self.zero_division
+        )
+        runner.loader_metrics[self.prefix] = float(metric)
 
     def _f1_from_confusion_matrix(
-        self, MCM, average, beta=1, warn_for=("precision", "recall", "f-score"), zero_division="warn"
+        self,
+        mcm: np.ndarray,
+        average: str,
+        beta: float,
+        warn_for=("precision", "recall", "f-score"),
+        zero_division="warn",
     ):
         """
         Code borrowed from sklear.metrics
         """
-        tp_sum = MCM[:, 1, 1]
-        pred_sum = tp_sum + MCM[:, 0, 1]
-        true_sum = tp_sum + MCM[:, 1, 0]
+        tp_sum = mcm[:, 1, 1]
+        pred_sum = tp_sum + mcm[:, 0, 1]
+        true_sum = tp_sum + mcm[:, 1, 0]
 
         if average == "micro":
             tp_sum = np.array([tp_sum.sum()])
