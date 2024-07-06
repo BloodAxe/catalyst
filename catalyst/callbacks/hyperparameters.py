@@ -19,7 +19,7 @@ class HyperParametersCallback(Callback):
         if "stage" in hparam_dict:
             raise KeyError("Key 'stage' is reserved")
         for key, value in hparam_dict.items():
-            if not isinstance(value, (str, float, int, bool)):
+            if value is not None and not isinstance(value, (str, float, int, bool)):
                 raise ValueError(f"Value of key {key} must be either str,float,int,bool. Got {value}")
 
         super().__init__(CallbackOrder.Metric, node=CallbackNode.Master)
