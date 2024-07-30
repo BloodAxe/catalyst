@@ -121,7 +121,6 @@ class EarlyPruningCallback(Callback):
         minimize: bool,
     ):
         super().__init__(order=CallbackOrder.external, node=CallbackNode.all)
-        self.best_score = defaultdict(lambda: None)
         self.metric_name = metric
         self.threshold = threshold
         self.patience = patience
