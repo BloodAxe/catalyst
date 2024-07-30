@@ -108,4 +108,45 @@ class EarlyStoppingCallback(Callback):
             runner.need_early_stop = True
 
 
-__all__ = ["EarlyStoppingCallback"]
+class EarlyPruningCallback(Callback):
+    """
+    Early exit if metric did not reach a certain value in a certain number of epochs.
+    """
+
+    def __init__(
+        self,
+        threshold: float,
+        patience: int,
+        metric: str,
+        minimize: bool,
+    ):
+        super().__init__(order=CallbackOrder.external, node=CallbackNode.all)
+        self.best_score = defaultdict(lambda: None)
+        self.metric_name = metric
+        self.threshold = threshold
+        self.patience = patience
+
+        if minimize:
+            self.is_better = lambda score, best: score <= best
+        else:
+            self.is_better = lambda score, best: score >= best
+
+    def on_epoch_end(self, runner: "IRunner") -> None:
+        """Check whether training should be stopped
+
+        Args:
+            runner: current runner
+        """
+        if runner.stage_name.startswith("infer"):
+            return
+
+        score = runner.valid_metrics[self.metric_name]
+        metric_is_better_than_threshold = self.is_better(score, self.threshold)
+        if not metric_is_better_than_threshold and runner.epoch >= self.patience:
+            print(
+                f"Metric {self.metric_name} did not pass ({score}) a certain threshold {self.threshold} at {runner.epoch} epoch. Triggering an early stop"
+            )
+            runner.need_early_stop = True
+
+
+__all__ = ["EarlyStoppingCallback", "EarlyPruningCallback"]
