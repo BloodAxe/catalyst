@@ -39,6 +39,8 @@ class ShowPolarBatchesCallback(Callback):
         track_worst: bool = True,
         track_nan: bool = True,
         filesystem_output_dir: str = None,
+            log_frequency=1,
+        log_after_epoch = None
     ):
         """
 
@@ -48,6 +50,7 @@ class ShowPolarBatchesCallback(Callback):
         :param minimize:
         :param min_delta:
         :param targets: Str 'tensorboard' or 'matplotlib, or ['tensorboard', 'matplotlib']
+        :param log_after_epoch: Start logging after certain epoch
         """
         super().__init__(CallbackOrder.Logging, node=CallbackNode.All)
         assert isinstance(targets, (list, str))
@@ -73,6 +76,9 @@ class ShowPolarBatchesCallback(Callback):
         self.visualize_batch = visualize_batch
         self.targets = [targets] if isinstance(targets, str) else targets
         self.filesystem_output_dir = filesystem_output_dir
+
+        self.log_after_epoch = log_after_epoch
+        self.log_frequency = log_frequency
 
         if minimize:
             self.is_better = lambda score, best: score <= (best - min_delta)
@@ -131,7 +137,18 @@ class ShowPolarBatchesCallback(Callback):
             self.nan_input = self.to_cpu(runner.input)
             self.nan_output = self.to_cpu(runner.output)
 
+    def is_logging_enable_for_epoch(self, runner):
+        if self.log_after_epoch is not None and runner.epoch < self.log_after_epoch:
+            return False
+
+        if runner.epoch % self.log_frequency != 0:
+            return False
+
+        return True
+
     def on_loader_end(self, runner: IRunner):
+        if not self.is_logging_enable_for_epoch(runner):
+            return
 
         if self.best_score is not None:
             best_samples = self.visualize_batch(self.best_input, self.best_output)
