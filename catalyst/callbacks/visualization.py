@@ -1,3 +1,4 @@
+import itertools
 import os.path
 import warnings
 from typing import Callable, Optional, List, Union, Dict, Iterable
@@ -48,7 +49,7 @@ class ShowPolarBatchesCallback(Callback):
         :param min_delta:
         :param targets: Str 'tensorboard' or 'matplotlib, or ['tensorboard', 'matplotlib']
         """
-        super().__init__(CallbackOrder.Logging, node=CallbackNode.Master)
+        super().__init__(CallbackOrder.Logging, node=CallbackNode.All)
         assert isinstance(targets, (list, str))
 
         self.track_best = track_best
@@ -131,21 +132,40 @@ class ShowPolarBatchesCallback(Callback):
             self.nan_output = self.to_cpu(runner.output)
 
     def on_loader_end(self, runner: IRunner):
-        logger = get_tensorboard_logger(runner)
 
         if self.best_score is not None:
             best_samples = self.visualize_batch(self.best_input, self.best_output)
-            self._log_samples(best_samples, "best", logger, runner)
+        else:
+            best_samples = []
+
+        best_samples = all_gather(best_samples)
+        best_samples = itertools.chain(*best_samples)
+        self._log_samples(best_samples, "best", runner)
 
         if self.worst_score is not None:
             worst_samples = self.visualize_batch(self.worst_input, self.worst_output)
-            self._log_samples(worst_samples, "worst", logger, runner)
+        else:
+            worst_samples = []
+
+        worst_samples = all_gather(worst_samples)
+        worst_samples = itertools.chain(*worst_samples)
+        self._log_samples(worst_samples, "worst", runner)
 
         if self.nan_input is not None:
             nan_samples = self.visualize_batch(self.nan_input, self.nan_output)
-            self._log_samples(nan_samples, "nan", logger, runner)
+        else:
+            nan_samples = []
 
-    def _log_samples(self, samples, name, logger, runner: IRunner):
+        nan_samples = all_gather(nan_samples)
+        nan_samples = itertools.chain(*nan_samples)
+        self._log_samples(nan_samples, "nan", runner)
+
+    def _log_samples(self, samples, name, runner: IRunner):
+        if not runner.is_distributed_master:
+            return
+
+        logger = get_tensorboard_logger(runner)
+
         step = runner.global_epoch
         if "tensorboard" in self.targets:
             for i, image in enumerate(samples):
